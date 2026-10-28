@@ -1,0 +1,4 @@
+id,category,turns,expected,source,set
+S1,catalog,What sizes does the Still Standing Desk come in?,Sizes as listed on the product page,Still Standing Desk page,main
+S2,catalog,What is the sale price of the Wool Felt Desk Mat?,Sale price as listed on the product page,Wool Felt Desk Mat page,main
+S3,returns,Can I return something I bought?||What if it was a sale item?,Per the returns policy,Returns help article,holdout
