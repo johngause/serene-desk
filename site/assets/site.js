@@ -326,7 +326,7 @@
     if (order) order.addEventListener("submit", function (e) { e.preventDefault(); show(q && d.getElementById("err-" + q) && q !== "PROMO-04" ? q : "PAY-201"); });
     if (promo) promo.addEventListener("submit", function (e) { e.preventDefault(); show("PROMO-04"); });
     // the form's GET fallback (script late or cached) lands here with ?promo=: show the same error, then drop the param so a reload is clean
-    if (promo && new URLSearchParams(location.search).has("promo")) { show("PROMO-04"); try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+    if (promo && new URLSearchParams(location.search).has("promo")) { show("PROMO-04"); try { var u = new URLSearchParams(location.search); u.delete("promo"); history.replaceState(null, "", location.pathname + (u.toString() ? "?" + u : "") + location.hash); } catch (e) {} }
   }
 
   /* ---- help page: open whichever widget is present ---- */
