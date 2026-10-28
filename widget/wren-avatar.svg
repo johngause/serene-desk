@@ -1,44 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Wren">
-  <defs>
-    <radialGradient id="glow" cx="74%" cy="22%" r="72%">
-      <stop offset="0" stop-color="#F3C26B" stop-opacity=".34"/>
-      <stop offset="1" stop-color="#F3C26B" stop-opacity="0"/>
-    </radialGradient>
-    <clipPath id="body"><path d="M150 282c0-78 64-128 140-122 70 6 118 56 112 120-6 70-66 112-138 110-70-2-114-42-114-108z"/></clipPath>
-  </defs>
   <rect width="512" height="512" fill="#1E2630"/>
-  <rect width="512" height="512" fill="url(#glow)"/>
-  <g transform="translate(246 275) scale(1.1) translate(-259 -263)">
-  <!-- perch: a desk edge -->
-  <rect x="96" y="396" width="330" height="20" rx="4" fill="#C99A68"/>
-  <rect x="96" y="410" width="330" height="6" rx="3" fill="#000" opacity=".22"/>
-  <!-- tail, cocked up -->
-  <path d="M348 216l46-110c5-11 21-11 26 0l8 22c3 9 0 18-7 23l-44 94z" fill="#8F6440"/>
-  <path d="M392 132l22 9M383 154l22 9M374 176l22 9" stroke="#5E4129" stroke-width="7" stroke-linecap="round"/>
-  <!-- legs -->
-  <path d="M248 382l-8 18M292 384l6 16" stroke="#5E4129" stroke-width="9" stroke-linecap="round"/>
-  <!-- body -->
-  <path d="M150 282c0-78 64-128 140-122 70 6 118 56 112 120-6 70-66 112-138 110-70-2-114-42-114-108z" fill="#C99A68"/>
-  <g clip-path="url(#body)">
-    <!-- shade side away from lamp -->
-    <path d="M140 300c40 70 140 100 270 40v120H140z" fill="#000" opacity=".16"/>
-    <!-- pale belly -->
-    <ellipse cx="236" cy="338" rx="72" ry="44" fill="#E8C9A0" opacity=".85"/>
-    <!-- lit edge toward lamp -->
-    <path d="M250 158c70-4 130 40 150 100-30-44-80-74-150-86z" fill="#fff" opacity=".18"/>
-  </g>
+  <!-- tail, cocked up behind -->
+  <path d="M150 250L104 104c-5-14 7-27 21-23l24 7c11 3 18 14 17 25l30 150z" fill="#9A6B43"/>
+  <!-- head + body as one shape -->
+  <circle cx="236" cy="300" r="128" fill="#C99A68"/>
+  <circle cx="320" cy="218" r="84" fill="#C99A68"/>
   <!-- wing -->
-  <path d="M258 236c50-20 112 0 128 46 8 24-10 40-34 38-50-4-92-30-106-58-4-10 2-22 12-26z" fill="#8F6440"/>
-  <path d="M290 262l60 18M282 284l58 16M300 304l40 8" stroke="#5E4129" stroke-width="7" stroke-linecap="round"/>
-  <!-- head -->
-  <circle cx="200" cy="222" r="70" fill="#C99A68"/>
-    <path d="M206 154c34 4 60 28 64 60-12-28-36-48-64-60z" fill="#fff" opacity=".2"/>
-  <!-- eyebrow stripe (the wren's tell) -->
-  <path d="M146 196c22-16 64-22 104-10" stroke="#F1E3C8" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <path d="M150 262c40-34 120-38 160 0 14 14 8 34-12 40-50 14-110 6-150-14-12-6-10-18 2-26z" fill="#9A6B43"/>
+  <!-- beak -->
+  <path d="M396 202l70 16-70 18z" fill="#F3C26B"/>
   <!-- eye -->
-  <circle cx="186" cy="218" r="13" fill="#1E2630"/>
-  <circle cx="191" cy="213" r="4.5" fill="#F3C26B"/>
-  <!-- beak, slim and slightly down-curved -->
-  <path d="M134 226c-22 2-46 8-62 16 20 2 44 0 64-6z" fill="#3A2A1C"/>
-</g>
+  <circle cx="346" cy="200" r="20" fill="#1E2630"/>
 </svg>
