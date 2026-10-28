@@ -1,0 +1,86 @@
+---
+layout: base.njk
+pagination:
+  data: products
+  size: 1
+  alias: p
+permalink: "/products/{{ p.slug }}/"
+eleventyComputed:
+  title: "{{ p.name }}"
+  description: "{{ p.name }} ({{ p.id }}) from Serene Desk: price, options and specifications."
+---
+{% import "art.njk" as a %}
+{% set isDesk = p.category == "desks" %}
+{% set firstW = p.widths[0] %}
+<article class="pdp" itemscope itemtype="https://schema.org/Product">
+  <div class="pdp-art grain">
+    <div class="pool-bg" aria-hidden="true"></div>
+    {{ a.art(p.art) }}
+    {% if p.sale %}<span class="sale">SALE</span>{% endif %}
+  </div>
+
+  <div class="pdp-info gut-r">
+    <nav class="crumb" aria-label="Breadcrumb"><a href="{{ ('/' + p.category + '/') | url }}">{{ p.category | capitalize }}</a></nav>
+    <h1 itemprop="name">{{ p.name }}</h1>
+    <p class="sku mono" id="sku">{% if isDesk %}{{ p.variants[0].sku }}{% else %}{{ p.id }}{% endif %}</p>
+    <p class="price big {% if p.sale %}on{% endif %}" id="price">
+      {% if p.sale %}{{ p.sale | money }}<s><span class="vh">Regular price </span>{{ p.price | money }}</s>
+      {% else %}{{ p.price | money }}{% endif %}
+    </p>
+
+    <form class="opts" action="{{ '/cart/' | url }}" method="get">
+      {% if p.widths.length > 1 %}
+      <fieldset class="optset" id="widths"><legend>Width</legend>
+        {% for w in p.widths %}<label class="opt"><input type="radio" name="width" value="{{ w.inches }}" data-price="{{ w.price }}" {% if loop.first %}checked{% endif %}><span>{{ w.inches }} in<small class="mono">{{ w.price | money }}</small></span></label>{% endfor %}
+      </fieldset>
+      {% endif %}
+      {% if p.finishes.length %}
+      <fieldset class="optset" id="finishes"><legend>{% if isDesk %}Finish{% else %}Colour{% endif %}</legend>
+        {% for f in p.finishes %}<label class="opt sw"><input type="radio" name="finish" value="{{ f.name }}" id="fin-{{ f.name }}" {% if loop.first %}checked{% endif %}><span><i class="dot" style="background:{{ f.hex }}"></i>{{ f.name | capitalize }}</span></label>{% endfor %}
+      </fieldset>
+      {% endif %}
+      {% if p.sizeNote %}<p class="sizenote">{{ p.sizeNote }}</p>{% endif %}
+      <div class="addbar">
+        <p class="price" aria-hidden="true">{% if p.sale %}{{ p.sale | money }}{% else %}{{ p.price | money }}{% endif %}</p>
+        <button class="btn lamp" type="submit">Add to cart</button>
+      </div>
+    </form>
+
+    <section class="block" aria-labelledby="desc-h">
+      <h2 id="desc-h">About this {{ p.name | lower }}</h2>
+      <div class="pending">[COPY PENDING: product description for {{ p.name }}]</div>
+    </section>
+
+    {% if isDesk %}
+    <section class="block" aria-labelledby="choose-h">
+      <h2 id="choose-h">Choosing a width</h2>
+      <svg class="note-line" viewBox="0 0 160 12" aria-hidden="true"><path d="M3 7 C 40 2, 90 10, 157 4" fill="none" stroke="#F3C26B" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <div class="pending">[COPY PENDING: choosing a width block for {{ p.name }}]</div>
+      <p><a class="textlink" href="{{ '/guides/choosing-a-desk-width/' | url }}">Choosing a desk width: full guide</a></p>
+    </section>
+    {% endif %}
+
+    <section class="block" aria-labelledby="spec-h">
+      <h2 id="spec-h">Specifications</h2>
+      <table class="spec">
+        <tbody>
+          <tr><th scope="row">Item ID</th><td class="mono">{{ p.id }}</td></tr>
+          <tr><th scope="row">Category</th><td>{{ p.category | capitalize }}</td></tr>
+          {% if p.widths.length %}<tr><th scope="row">Widths</th><td class="mono">{% for w in p.widths %}{{ w.inches }} in{% if not loop.last %} / {% endif %}{% endfor %}</td></tr>
+          {% elif p.sizeNote %}<tr><th scope="row">Size</th><td>{{ p.sizeNote }}</td></tr>{% endif %}
+          {% if p.finishes.length %}<tr><th scope="row">{% if isDesk %}Finishes{% else %}Colours{% endif %}</th><td>{% for f in p.finishes %}{{ f.name | capitalize }}{% if not loop.last %}, {% endif %}{% endfor %}</td></tr>{% endif %}
+          <tr><th scope="row">Price</th><td class="mono">{% if p.widths.length > 1 %}{% for w in p.widths %}{{ w.price | money }}{% if not loop.last %} / {% endif %}{% endfor %}{% else %}{{ p.price | money }}{% endif %}</td></tr>
+          {% if p.sale %}<tr><th scope="row">Sale price</th><td class="mono ember">{{ p.sale | money }} (regular {{ p.price | money }})</td></tr>{% endif %}
+        </tbody>
+      </table>
+      {% if isDesk %}
+      <h3>Variant SKUs</h3>
+      <table class="spec skus">
+        <thead><tr><th scope="col">SKU</th><th scope="col">Width</th><th scope="col">Finish</th><th scope="col">Price</th></tr></thead>
+        <tbody>{% for v in p.variants %}<tr><td class="mono">{{ v.sku }}</td><td>{% if v.width %}{{ v.width }} in{% else %}One size{% endif %}</td><td>{{ v.finish | capitalize }}</td><td class="mono">{{ v.price | money }}</td></tr>{% endfor %}</tbody>
+      </table>
+      {% endif %}
+      <div class="pending">[COPY PENDING: full specifications for {{ p.name }}]</div>
+    </section>
+  </div>
+</article>

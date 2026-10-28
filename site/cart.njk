@@ -1,0 +1,11 @@
+---
+layout: base.njk
+permalink: /cart/
+title: Your cart
+description: Your Serene Desk cart.
+---
+<section class="gut cartpage"><div class="wrap narrow">
+  <h1>Your cart</h1>
+  {% include "summary.njk" %}
+  <p><a class="btn lamp" href="{{ '/checkout/' | url }}">Go to checkout</a> <a class="textlink" href="{{ '/desks/' | url }}">Keep browsing</a></p>
+</div></section>

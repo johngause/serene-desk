@@ -1,0 +1,55 @@
+{% import "art.njk" as a %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if title %}{{ title }} | Serene Desk{% else %}Serene Desk{% endif %}</title>
+<meta name="description" content="{{ description or 'Serene Desk sells calm standing desks, lamps and small accessories for people who work from home.' }}">
+<meta name="theme-color" content="#1E2630">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231E2630'/%3E%3Ccircle cx='16' cy='12' r='5' fill='%23F3C26B'/%3E%3Cpath d='M6 22H26' stroke='%23E3E7EA' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="{{ '/assets/site.css' | url }}">
+</head>
+<body class="{{ bodyClass }}">
+<a class="skip" href="#main">Skip to content</a>
+{{ a.sprite() }}
+<div class="ann gut"><div class="wrap"><b>Free delivery on every desk.</b> Try it for 30 nights at home.</div></div>
+<header class="nav gut"><div class="wrap">
+  <a class="brand" href="{{ '/' | url }}"><svg width="30" height="30" aria-hidden="true"><use href="#mark"/></svg>Serene Desk</a>
+  <nav aria-label="Main"><ul class="links">
+    <li><a href="{{ '/desks/' | url }}">Desks</a></li>
+    <li><a href="{{ '/lighting/' | url }}">Lighting</a></li>
+    <li><a href="{{ '/accessories/' | url }}">Accessories</a></li>
+    <li><a href="{{ '/help/' | url }}">Help</a></li>
+  </ul></nav>
+  <a class="cartlink" href="{{ '/cart/' | url }}">Cart (2)</a>
+</div></header>
+
+<main id="main">
+{{ content | safe }}
+</main>
+
+<footer class="foot gut"><div class="wrap">
+  <p>Serene Desk is a fictional brand created for a product demo.</p>
+  <nav aria-label="Footer"><ul class="mono">
+    <li><a href="{{ '/shipping/' | url }}">Shipping</a></li>
+    <li><a href="{{ '/returns/' | url }}">Returns</a></li>
+    <li><a href="{{ '/trial/' | url }}">Trial</a></li>
+    <li><a href="{{ '/warranty/' | url }}">Warranty</a></li>
+    <li><a href="{{ '/guides/choosing-a-desk-width/' | url }}">Desk width guide</a></li>
+    <li><a href="{{ '/about/' | url }}">About</a></li>
+    <li><a href="{{ '/help/' | url }}">Help</a></li>
+  </ul></nav>
+</div></footer>
+
+<script src="{{ '/assets/site.js' | url }}" defer></script>
+{% if config.widget == "zendesk" and config.zendeskWidgetKey %}
+<script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key={{ config.zendeskWidgetKey }}"></script>
+{% elif config.widget == "custom" %}
+{# Phase 4 hook: the custom widget (widget/ dir) loads here. Does nothing yet. #}
+<script id="serene-widget-hook">window.SereneWidget = { relayUrl: {{ config.relayUrl | dump | safe }}, agentName: {{ config.agentName | dump | safe }}, loaded: false };</script>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,42 @@
+---
+layout: base.njk
+permalink: /checkout/
+title: Checkout
+description: Checkout for your Serene Desk order.
+---
+<section class="gut checkout"><div class="wrap">
+  <h1>Checkout</h1>
+  <div class="co-grid">
+    <form class="co-form" id="order" method="get" action="{{ '/checkout/' | url }}#err-PAY-201" novalidate>
+      <div class="errors" id="errors">
+        <div class="errbox" id="err-PAY-201" role="alert"><span class="code">PAY-201</span><span>Your payment couldn't be verified.</span></div>
+        <div class="errbox" id="err-INV-09" role="alert"><span class="code">INV-09</span><span>An item in your cart just sold out.</span></div>
+        <div class="errbox" id="err-ADDR-12" role="alert"><span class="code">ADDR-12</span><span>We couldn't confirm this address.</span></div>
+      </div>
+
+      <fieldset><legend>Contact</legend>
+        <label class="fld">Email<input type="email" name="email" autocomplete="email"></label>
+      </fieldset>
+      <fieldset><legend>Delivery address</legend>
+        <label class="fld">Full name<input type="text" name="name" autocomplete="name"></label>
+        <label class="fld">Street address<input type="text" name="street" autocomplete="address-line1"></label>
+        <div class="two"><label class="fld">City<input type="text" name="city" autocomplete="address-level2"></label>
+        <label class="fld">Postal code<input type="text" name="zip" autocomplete="postal-code"></label></div>
+      </fieldset>
+      <fieldset><legend>Payment</legend>
+        <p class="paydisp"><span class="mono">•••• 4242</span> <span>Saved card on file</span></p>
+      </fieldset>
+      <button class="btn lamp" type="submit" id="place">Place order</button>
+    </form>
+
+    <aside class="co-sum" aria-labelledby="sum-h">
+      <h2 id="sum-h">Order summary</h2>
+      {% include "summary.njk" %}
+      <form class="promo" id="promo" method="get" action="{{ '/checkout/' | url }}#err-PROMO-04">
+        <label for="promo-code">Promo code</label>
+        <div class="promo-row"><input id="promo-code" class="mono" name="promo" value="SERENE10" autocomplete="off"><button class="btn ghost" type="submit">Apply</button></div>
+        <div class="errbox" id="err-PROMO-04" role="alert"><span class="code">PROMO-04</span><span>This code can't be applied to one or more items in your cart.</span></div>
+      </form>
+    </aside>
+  </div>
+</div></section>
