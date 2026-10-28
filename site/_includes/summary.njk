@@ -1,7 +1,7 @@
 {% import "art.njk" as a %}
-<ul class="lines">
-  {% for p in products %}{% if p.id == "SD-ACC-MAT" or p.id == "SD-LGT-LNT" %}
-  <li class="line">
+<ul class="lines" id="lines">
+  {% for p in products %}{% if p.id in site.preset %}
+  <li class="line" data-id="{{ p.id }}" data-qty="1" data-price="{{ p.sale or p.price }}">
     <div class="lineart grain">{{ a.art(p.art) }}</div>
     <div><p class="name"><a href="{{ ('/products/' + p.slug + '/') | url }}">{{ p.name }}</a></p>
       <p class="sku mono">{{ p.id }}{% if p.finishes.length %} · {{ p.finishes[0].name | capitalize }}{% endif %} · Qty 1</p>
@@ -10,4 +10,7 @@
   </li>
   {% endif %}{% endfor %}
 </ul>
-{% if not noTotals %}<dl class="totals"><div><dt>Subtotal</dt><dd class="mono">$165</dd></div></dl>{% endif %}
+{% if not noTotals %}<dl class="totals"><div><dt>Subtotal</dt><dd class="mono subtotal">$165</dd></div></dl>{% endif %}
+
+<button type="button" class="restore" id="restore" hidden>Restore demo cart</button>
+<script type="application/json" id="catalog">{ {%- for p in products %}{{ p.id | dump | safe }}:{"name":{{ p.name | dump | safe }},"slug":{{ p.slug | dump | safe }},"art":{{ p.art | dump | safe }},"price":{{ p.price }},"sale":{{ (p.sale or 0) }}}{% if not loop.last %},{% endif %}{% endfor -%} }</script>

@@ -42,7 +42,7 @@ eleventyComputed:
       {% if p.sale %}{{ p.sale | money }}<s><span class="vh">Regular price </span>{{ p.price | money }}</s>{% else %}{{ p.price | money }}{% endif %}
     </p>
 
-    <form class="opts" action="{{ '/cart/' | url }}" method="get">
+    <form class="opts" data-id="{{ p.id }}" data-preset="{{ site.preset | join(' ') }}" action="{{ '/cart/' | url }}" method="get">
       {% if p.widths.length > 1 %}
       <fieldset class="optset" id="widths"><legend>Width</legend>
         {% for w in p.widths %}<label class="opt"><input type="radio" name="width" value="{{ w.inches }}" data-price="{{ w.price }}" {% if loop.first %}checked{% endif %}><span>{{ w.inches }} in<small class="mono">{{ w.price | money }}</small></span></label>{% endfor %}
