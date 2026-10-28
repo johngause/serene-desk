@@ -1,6 +1,6 @@
 {
   "widget": "custom",
-  "relayUrl": "https://serene-relay.<account>.workers.dev",
+  "relayUrl": "https://serene-relay.serene-desk.workers.dev",
   "zendeskWidgetKey": "",
   "helpCenterUrl": "",
   "brandName": "Serene Desk",

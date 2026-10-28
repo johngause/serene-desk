@@ -10,3 +10,4 @@ tools/test-runner/runs/
 .dev.vars
 screenshots/
 handoff.md
+.claude/worktrees/
