@@ -15,7 +15,7 @@
      all occur in the text being spoken are treated as echo and ignored. ---- */
   var SR = window.webkitSpeechRecognition || window.SpeechRecognition, TTS = window.speechSynthesis;
   var voiceOn = false, rec = null, recRun = false, speaking = false, queue = [], cur = "", curUtt = null;
-  var fillerT = null, awaiting = false, voices = [], voiceName = "", VKEY = "sd-voice";
+  var fillerT = null, restartT = null, fails = 0, recent = "", endAt = 0, awaiting = false, voices = [], voiceName = "", VKEY = "sd-voice";
   try { voiceName = localStorage.getItem(VKEY) || ""; } catch (e) {}
   function status(t) { if (el.status) el.status.textContent = t; }
   function words(t) { return (t.toLowerCase().match(/[a-z0-9']+/g) || []); }
@@ -49,7 +49,7 @@
     cur = queue.shift(); speaking = true; status("Speaking");
     var u = new SpeechSynthesisUtterance(cur), v = pickVoice();
     if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
-    var done = function () { if (curUtt !== u) return; curUtt = null; speaking = false; cur = ""; next(); };
+    var done = function () { if (curUtt !== u) return; curUtt = null; speaking = false; recent = cur; endAt = Date.now(); cur = ""; next(); };
     u.onend = done; u.onerror = done;
     curUtt = u; // keep a reference: Chrome can garbage-collect a playing utterance
     TTS.speak(u);
@@ -70,7 +70,7 @@
     try { rec.start(); recRun = true; status(speaking ? "Speaking" : "Listening"); } catch (e) {}
   }
   function voiceOff(msg) {
-    voiceOn = false; awaiting = false; clearTimeout(fillerT); stopSpeech();
+    voiceOn = false; awaiting = false; clearTimeout(fillerT); clearTimeout(restartT); fails = 0; stopSpeech();
     if (rec) { try { rec.abort(); } catch (e) {} }
     recRun = false; el.input.value = ""; el.mic.setAttribute("aria-pressed", "false");
     el.mic.setAttribute("aria-label", "Turn on voice"); el.panel.classList.remove("sw-voice");
@@ -88,10 +88,11 @@
         var r = e.results[i]; if (r.isFinal) fin += r[0].transcript; else itm += r[0].transcript;
       }
       var heard = (fin || itm).trim(); if (!heard) return;
-      if (speaking) {
-        var spoken = " " + words(cur + " " + queue.join(" ")).join(" ") + " ";
+      fails = 0;
+      if (speaking || Date.now() - endAt < 400) { // echo filter stays on ~400 ms after speech ends
+        var spoken = " " + words(cur + " " + queue.join(" ") + " " + recent).join(" ") + " ";
         if (words(heard).every(function (w) { return spoken.indexOf(" " + w + " ") >= 0; })) return; // echo of our own voice
-        stopSpeech(); // barge-in
+        if (speaking) stopSpeech(); // barge-in
       }
       if (!fin) { el.input.value = heard; return; }
       el.input.value = "";
@@ -103,10 +104,13 @@
     };
     rec.onerror = function (e) {
       if (e.error === "not-allowed" || e.error === "service-not-allowed") voiceOff("Microphone access is blocked");
+      else if (e.error !== "no-speech" && e.error !== "aborted") fails++; // network, audio-capture, ...
     };
     rec.onend = function () { // Chrome ends recognition on silence: restart while voice is on
       recRun = false;
-      if (voiceOn) setTimeout(startRec, 250);
+      if (!voiceOn) return;
+      if (fails >= 3) return voiceOff("Voice unavailable");
+      clearTimeout(restartT); restartT = setTimeout(startRec, [250, 1000, 3000][fails] || 250);
     };
   }
   function onAgentMessage(m) {
@@ -211,7 +215,11 @@
       el.status = h("span", "vh"); el.status.setAttribute("role", "status");
       form.appendChild(el.mic); form.appendChild(el.status);
       initVoice();
-      el.mic.addEventListener("click", function () { if (voiceOn) voiceOff(); else voiceStart(); });
+      el.mic.addEventListener("click", function () {
+        if (!voiceOn) voiceStart();
+        else if (speaking || queue.length) stopSpeech(); // barge-in: stop playback, keep listening
+        else voiceOff();
+      });
     }
     form.appendChild(el.input); form.appendChild(el.send);
 
