@@ -1,6 +1,6 @@
 # Serene Desk design (locked)
 
-Brand is fixed by `design/r3-brand-serene-desk.html` and handoff §3. Design skills (Hallmark, Impeccable) may refine spacing, hierarchy, motion and detail. They never replace the palette, fonts or concept.
+The mockup `design/r3-brand-serene-desk.html` sets the mood (dusk palette, serif display, flat cartoon illustration, a lamp at night). Keep that mood; everything else, including exact tokens, type use and layout, can change when better craft calls for it. No photorealism. Decoration must earn its place: no ornaments added because sites "usually have them" (stray arrows, squiggles, eyebrow labels).
 
 ## Tokens
 
@@ -21,7 +21,7 @@ A desk lamp at dusk. Every screen has one pool of warm light, and it is the thin
 
 ## Signature interactions (cheap, CSS-first, all respect `prefers-reduced-motion`)
 
-1. **Lamp pull-chain** in the hero: tap or drag the chain and the pool of light warms up. Default state is lit, so nothing depends on it.
+1. **Lamp pull-chain** in the hero: the room loads dark (text still fully readable), the chain auto-pulls once with a click and the lamp snaps on, like walking into your office at night. On/off is abrupt like a real lamp (no fade), and off means no glow at all. Click sound on every pull.
 2. **Hour Cube** section: the cube tips over to the next face (25 / 50 / 90) on hover or tap.
 3. **Light follows the visitor's clock**: the glow shifts warmer after sunset local time. One CSS variable set by a few lines of JS; default looks right without JS.
 4. **Finish swatches swap the SVG fill** of the desk illustration (oak / walnut / ash), so the selector visibly does something even though checkout is fake.
