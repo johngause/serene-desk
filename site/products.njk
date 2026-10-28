@@ -12,6 +12,7 @@ eleventyComputed:
 {% import "art.njk" as a %}
 {% set isDesk = p.category == "desks" %}
 {% set pid = p.id %}
+{% set dc = deskcopy[p.id] %}
 {% set pname = p.name %}
 {% set pcat = p.category %}
 {% set pslug = p.slug %}
@@ -61,6 +62,14 @@ eleventyComputed:
       <div class="pending">[COPY PENDING: product description for {{ p.name }}]</div>
     </section>
 
+    {% if dc and dc.dial %}
+    <section class="block dial" aria-labelledby="dial-h">
+      <h2 id="dial-h">{{ dc.dial.title }}</h2>
+      <p class="dial-sub">{{ dc.dial.intro }}</p>
+      <ul class="dial-list">{% for i in dc.dial.items %}<li>{{ i | safe }}</li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+
     {% if isDesk %}
     <section class="block" aria-labelledby="choose-h">
       <h2 id="choose-h">Choosing a width</h2>
@@ -71,6 +80,9 @@ eleventyComputed:
 
     <section class="block datasheet" aria-labelledby="spec-h">
       <div class="dshead"><h2 id="spec-h">Specifications</h2><span class="mono">{{ p.id }}</span></div>
+      {% if dc and dc.rows %}
+      <table class="spec"><tbody>{% for r in dc.rows %}<tr><th scope="row">{{ r[0] }}</th><td>{{ r[1] }}</td></tr>{% endfor %}</tbody></table>
+      {% else %}
       <table class="spec">
         <tbody>
           <tr><th scope="row">Item ID</th><td class="mono">{{ p.id }}</td></tr>
@@ -82,6 +94,8 @@ eleventyComputed:
           {% if p.sale %}<tr><th scope="row">Sale price</th><td class="mono ember">{{ p.sale | money }} (regular {{ p.price | money }})</td></tr>{% endif %}
         </tbody>
       </table>
+      {% endif %}
+      {% if dc and dc.bullets %}<ul class="spec-list">{% for b in dc.bullets %}<li>{{ b }}</li>{% endfor %}</ul>{% endif %}
       {% if isDesk %}
       <h3>Variant SKUs</h3>
       <table class="spec skus">
@@ -89,7 +103,7 @@ eleventyComputed:
         <tbody>{% for v in p.variants %}<tr><td class="mono">{{ v.sku }}</td><td>{% if v.width %}{{ v.width }} in{% else %}One size{% endif %}</td><td>{{ v.finish | capitalize }}</td><td class="mono">{{ v.price | money }}</td></tr>{% endfor %}</tbody>
       </table>
       {% endif %}
-      <div class="pending">[COPY PENDING: full specifications for {{ p.name }}]</div>
+      {% if not (dc and (dc.rows or dc.bullets)) %}<div class="pending">[COPY PENDING: full specifications for {{ p.name }}]</div>{% endif %}
     </section>
   </div>
 </article>

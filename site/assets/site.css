@@ -111,7 +111,7 @@ html[data-lamp="off"] .scene .darken{opacity:.5}
 .prod .name{font:500 16px/1.3 var(--body);letter-spacing:0}
 .prod .name a{text-decoration:none}
 .prod .name a:hover{text-decoration:underline;text-decoration-color:var(--lamp);text-underline-offset:3px}
-.sku{font:400 11.5px/1.4 var(--mono);color:var(--fog);margin:0}
+.sku{font:400 12.5px/1.4 var(--mono);color:var(--fog);margin:0}
 .price{font-variant-numeric:tabular-nums;white-space:nowrap;margin:0}
 .price s{color:var(--fog);margin-left:6px}
 .price.on{color:var(--ember)}
@@ -278,3 +278,19 @@ input:focus-visible{outline:2px solid var(--lamp);outline-offset:1px}
 .js .errbox.on .errx{display:inline-block}
 .errbox span:nth-child(2){font-size:15px;color:var(--mist)}
 .price.on,.saletag{color:#EE917A}
+
+/* copy blocks */
+.why-line{font:400 clamp(24px,2.4vw,32px)/1.25 var(--display);color:var(--mist);max-width:30ch;margin:0}
+.prose .why-line{max-width:34ch;color:var(--mist)}
+.why-list h3{margin-bottom:8px}
+.why-list p{margin:0;color:var(--fog);max-width:52ch}
+.dial{position:relative}
+.dial h2{margin-bottom:4px}
+.dial-sub{margin:0 0 18px;color:var(--fog);font-size:14px}
+.dial-list{display:grid;gap:14px}
+.dial-list li{padding-left:22px;position:relative;color:var(--fog)}
+.dial-list li::before{content:"";position:absolute;left:0;top:.6em;width:9px;height:9px;border-radius:50%;background:var(--oak)}
+.dial-list b{color:var(--mist);font-weight:500}
+.spec-list{display:grid;gap:10px;margin:0 0 8px}
+.spec-list li{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+p,li{text-wrap:pretty}

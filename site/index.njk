@@ -63,8 +63,8 @@ bodyClass: home
       </g>
       <!-- spec callouts, attached to the desk (same facts are in the strip below) -->
       <g aria-hidden="true" font-family="IBM Plex Mono, monospace" font-size="13" fill="#E3E7EA">
-        <path d="M184 340 H276" stroke="#9AA6B0" stroke-width="1.2"/><circle cx="278" cy="340" r="3" fill="#9AA6B0"/>
-        <text x="88" y="344">38 dB motor</text>
+        <path d="M306 329 H322" stroke="#9AA6B0" stroke-width="1.2"/><circle cx="304" cy="329" r="3" fill="#9AA6B0"/>
+        <text x="330" y="334">38 dB</text><text x="330" y="351" fill="#9AA6B0" font-size="12">quieter than a library</text>
         <path d="M612 290 V388 M606 290 H618 M606 388 H618" stroke="#9AA6B0" stroke-width="1.2" fill="none"/>
         <text x="624" y="335">25–51 in</text><text x="624" y="352" fill="#9AA6B0" font-size="12">height</text>
       </g>
@@ -83,7 +83,7 @@ bodyClass: home
 </section>
 
 <section class="strip gut" aria-label="Key facts"><div class="wrap">
-  <div class="fact"><p class="num">38<small>dB</small></p><p>Lift motor at full speed. Quieter than a library reading room.</p></div>
+  <div class="fact"><p class="num">38<small>dB</small></p><p>Lift motor at full speed. 38 dB, quieter than a library.</p></div>
   <div class="fact"><p class="num">25–51<small>in</small></p><p>Height range, so it fits people from 5'0" to 6'6", sitting or standing.</p></div>
   <div class="fact"><p class="num">30<small>nights</small></p><p>Try any desk at home. If it isn't right, we pick it up.</p></div>
 </div></section>
@@ -100,12 +100,12 @@ bodyClass: home
 <section class="why gut"><div class="wrap">
   <div class="why-head">
     <h2>Why it's quiet</h2>
-    <div class="pending">[COPY PENDING: why Serene Desk — 3 short points on what makes the desks calm]</div>
+    <p class="why-line">{{ deskcopy.why.line }}</p>
   </div>
   <ol class="why-list">
-    <li><span class="n" aria-hidden="true">1</span><div><h3><span class="pending inline">[COPY PENDING: point 1 headline]</span></h3><div class="pending">[COPY PENDING: point 1, one or two sentences]</div></div></li>
-    <li><span class="n" aria-hidden="true">2</span><div><h3><span class="pending inline">[COPY PENDING: point 2 headline]</span></h3><div class="pending">[COPY PENDING: point 2, one or two sentences]</div></div></li>
-    <li><span class="n" aria-hidden="true">3</span><div><h3><span class="pending inline">[COPY PENDING: point 3 headline]</span></h3><div class="pending">[COPY PENDING: point 3, one or two sentences]</div></div></li>
+    {%- for pt in deskcopy.why.points %}
+    <li><span class="n" aria-hidden="true">{{ loop.index }}</span><div><h3>{{ pt.h }}</h3><p>{{ pt.t }}</p></div></li>
+    {%- endfor %}
   </ol>
 </div></section>
 
