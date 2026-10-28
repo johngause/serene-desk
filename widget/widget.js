@@ -10,7 +10,112 @@
   var fast = false, fastStart = 0, lastNew = 0, timer = null, open = false, busy = false, backoff = 0, retried = false;
   var el = {};
 
-  function onAgentMessage() {} // voice hook, unused in the text build
+  /* ---- voice (Web Speech API, Chrome). Ideas from MIT voice-chat demos (see commit); code is original.
+     Echo strategy: recognition stays on while speaking so the user can barge in; results whose words
+     all occur in the text being spoken are treated as echo and ignored. ---- */
+  var SR = window.webkitSpeechRecognition || window.SpeechRecognition, TTS = window.speechSynthesis;
+  var voiceOn = false, rec = null, recRun = false, speaking = false, queue = [], cur = "", curUtt = null;
+  var fillerT = null, awaiting = false, voices = [], voiceName = "", VKEY = "sd-voice";
+  try { voiceName = localStorage.getItem(VKEY) || ""; } catch (e) {}
+  function status(t) { if (el.status) el.status.textContent = t; }
+  function words(t) { return (t.toLowerCase().match(/[a-z0-9']+/g) || []); }
+  function pickVoice() {
+    var en = voices.filter(function (v) { return /^en/i.test(v.lang); });
+    var by = function (f) { return en.filter(f)[0]; };
+    return by(function (v) { return voiceName && v.name === voiceName; }) ||
+      by(function (v) { return /Online \(Natural\)/i.test(v.name) && /en-US/i.test(v.lang); }) ||
+      by(function (v) { return /Google US English/i.test(v.name); }) ||
+      by(function (v) { return /en-US/i.test(v.lang); }) || en[0] || null;
+  }
+  function loadVoices() {
+    if (!TTS) return;
+    voices = TTS.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
+    if (!el.voiceSel) return;
+    el.voiceSel.textContent = "";
+    var pv = pickVoice();
+    voices.forEach(function (v) {
+      var o = h("option", "", v.name + " (" + v.lang + ")"); o.value = v.name;
+      if (pv && pv.name === v.name) o.selected = true;
+      el.voiceSel.appendChild(o);
+    });
+  }
+  function speakText(t) { // Chrome cuts long utterances (~15 s): queue by sentence
+    (t.match(/[^.!?\n]+[.!?]*/g) || []).forEach(function (x) { x = x.trim(); if (/\w/.test(x)) queue.push(x); });
+    next();
+  }
+  function next() {
+    if (!voiceOn || speaking) return;
+    if (!queue.length) { status("Listening"); return; }
+    cur = queue.shift(); speaking = true; status("Speaking");
+    var u = new SpeechSynthesisUtterance(cur), v = pickVoice();
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
+    var done = function () { if (curUtt !== u) return; curUtt = null; speaking = false; cur = ""; next(); };
+    u.onend = done; u.onerror = done;
+    curUtt = u; // keep a reference: Chrome can garbage-collect a playing utterance
+    TTS.speak(u);
+  }
+  function stopSpeech() {
+    queue = []; curUtt = null; speaking = false; cur = "";
+    if (TTS) TTS.cancel();
+    if (voiceOn) status("Listening");
+  }
+  function speechText(m) {
+    var t = (m.text || "").replace(/\n[ \t]*Sources?:[\s\S]*$/i, "")
+      .replace(/\[([^\]]+)\]\(https?:\/\/[^)]*\)/g, "$1").replace(/https?:\/\/\S+/g, "")
+      .replace(/\*\*/g, "").replace(/^\s*[*-]\s+/gm, "");
+    return t.trim();
+  }
+  function startRec() {
+    if (!voiceOn || recRun || !open) return;
+    try { rec.start(); recRun = true; status(speaking ? "Speaking" : "Listening"); } catch (e) {}
+  }
+  function voiceOff(msg) {
+    voiceOn = false; awaiting = false; clearTimeout(fillerT); stopSpeech();
+    if (rec) { try { rec.abort(); } catch (e) {} }
+    recRun = false; el.input.value = ""; el.mic.setAttribute("aria-pressed", "false");
+    el.mic.setAttribute("aria-label", "Turn on voice"); el.panel.classList.remove("sw-voice");
+    status(msg || "Voice off");
+  }
+  function voiceStart() {
+    voiceOn = true; el.mic.setAttribute("aria-pressed", "true"); el.mic.setAttribute("aria-label", "Turn off voice");
+    el.panel.classList.add("sw-voice"); startRec();
+  }
+  function initVoice() {
+    rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = false;
+    rec.onresult = function (e) {
+      var fin = "", itm = "";
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        var r = e.results[i]; if (r.isFinal) fin += r[0].transcript; else itm += r[0].transcript;
+      }
+      var heard = (fin || itm).trim(); if (!heard) return;
+      if (speaking) {
+        var spoken = " " + words(cur + " " + queue.join(" ")).join(" ") + " ";
+        if (words(heard).every(function (w) { return spoken.indexOf(" " + w + " ") >= 0; })) return; // echo of our own voice
+        stopSpeech(); // barge-in
+      }
+      if (!fin) { el.input.value = heard; return; }
+      el.input.value = "";
+      awaiting = true; clearTimeout(fillerT);
+      fillerT = setTimeout(function () { // filler once, only if no reply yet
+        if (awaiting && voiceOn && C.voiceFiller) { awaiting = false; speakText(C.voiceFiller); }
+      }, 2500);
+      send({ text: heard.trim() });
+    };
+    rec.onerror = function (e) {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") voiceOff("Microphone access is blocked");
+    };
+    rec.onend = function () { // Chrome ends recognition on silence: restart while voice is on
+      recRun = false;
+      if (voiceOn) setTimeout(startRec, 250);
+    };
+  }
+  function onAgentMessage(m) {
+    if (!voiceOn) return;
+    awaiting = false; clearTimeout(fillerT);
+    var low = (m.text || "").toLowerCase();
+    if ((C.voiceSkipPatterns || []).some(function (p) { return p && low.indexOf(String(p).toLowerCase()) >= 0; })) return;
+    var t = speechText(m); if (t) speakText(t);
+  }
 
   function h(tag, cls, text) {
     var n = document.createElement(tag);
@@ -70,7 +175,24 @@
     t.appendChild(h("b", "", C.agentName));
     t.appendChild(h("small", "", (C.brandName || "Serene Desk") + " support"));
     var x = h("button", "sw-x", "×"); x.type = "button"; x.setAttribute("aria-label", "Close chat");
-    head.appendChild(av); head.appendChild(t); head.appendChild(x);
+    head.appendChild(av); head.appendChild(t);
+    if (TTS) {
+      el.gear = h("button", "sw-x sw-gear", "\u2699"); el.gear.type = "button";
+      el.gear.setAttribute("aria-label", "Voice settings"); el.gear.setAttribute("aria-expanded", "false");
+      head.appendChild(el.gear);
+      el.menu = h("div", "sw-menu"); el.menu.hidden = true;
+      var lab = h("label", "", "Voice"); el.voiceSel = h("select"); lab.appendChild(el.voiceSel);
+      el.menu.appendChild(lab);
+      el.voiceSel.addEventListener("change", function () {
+        voiceName = el.voiceSel.value;
+        try { localStorage.setItem(VKEY, voiceName); } catch (e) {}
+      });
+      el.gear.addEventListener("click", function () {
+        el.menu.hidden = !el.menu.hidden; el.gear.setAttribute("aria-expanded", String(!el.menu.hidden));
+        if (!el.menu.hidden) loadVoices();
+      });
+    }
+    head.appendChild(x);
 
     el.log = h("div", "sw-log");
     el.log.setAttribute("role", "log"); el.log.setAttribute("aria-live", "polite"); el.log.setAttribute("aria-label", "Conversation");
@@ -82,9 +204,18 @@
     el.input = h("input", "sw-in"); el.input.type = "text"; el.input.placeholder = "Type a message…";
     el.input.setAttribute("aria-label", "Message"); el.input.autocomplete = "off"; el.input.maxLength = 2000;
     el.send = h("button", "sw-send", "Send"); el.send.type = "submit";
+    if (SR && TTS) {
+      el.mic = h("button", "sw-mic"); el.mic.type = "button";
+      el.mic.setAttribute("aria-pressed", "false"); el.mic.setAttribute("aria-label", "Turn on voice");
+      el.mic.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V22h2v-3.1A7 7 0 0 0 19 12z"/></svg>';
+      el.status = h("span", "vh"); el.status.setAttribute("role", "status");
+      form.appendChild(el.mic); form.appendChild(el.status);
+      initVoice();
+      el.mic.addEventListener("click", function () { if (voiceOn) voiceOff(); else voiceStart(); });
+    }
     form.appendChild(el.input); form.appendChild(el.send);
 
-    el.panel.appendChild(head); el.panel.appendChild(el.log); el.panel.appendChild(el.typing); el.panel.appendChild(form);
+    el.panel.appendChild(head); if (el.menu) el.panel.appendChild(el.menu); el.panel.appendChild(el.log); el.panel.appendChild(el.typing); el.panel.appendChild(form);
     root.appendChild(el.panel); root.appendChild(el.launch);
     document.body.appendChild(root);
 
@@ -242,9 +373,11 @@
     el.input.focus();
   }
   function closePanel() {
+    if (voiceOn) voiceOff();
     open = false; clearTimeout(timer);
     el.panel.hidden = true; el.launch.hidden = false; el.launch.focus();
   }
 
   buildUI();
+  if (TTS) { TTS.addEventListener("voiceschanged", loadVoices); loadVoices(); }
 })();
