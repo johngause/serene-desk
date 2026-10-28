@@ -1,14 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Wren">
+  <defs>
+    <clipPath id="b"><circle cx="236" cy="300" r="128"/><circle cx="320" cy="218" r="84"/></clipPath>
+    <clipPath id="t"><path d="M150 250L104 104c-5-14 7-27 21-23l24 7c11 3 18 14 17 25l30 150z"/></clipPath>
+  </defs>
   <rect width="512" height="512" fill="#1E2630"/>
-  <!-- tail, cocked up behind -->
+  <!-- tail: base, lit edge, darker tip -->
   <path d="M150 250L104 104c-5-14 7-27 21-23l24 7c11 3 18 14 17 25l30 150z" fill="#9A6B43"/>
-  <!-- head + body as one shape -->
-  <circle cx="236" cy="300" r="128" fill="#C99A68"/>
-  <circle cx="320" cy="218" r="84" fill="#C99A68"/>
-  <!-- wing -->
+  <g clip-path="url(#t)">
+    <path d="M150 60L200 60L200 260L176 260z" fill="#B5845A"/>
+    <path d="M80 60H220V128H80z" fill="#7A5434"/>
+  </g>
+  <!-- head + body -->
+  <g clip-path="url(#b)">
+    <rect width="512" height="512" fill="#C99A68"/>
+    <!-- shade side, away from the light -->
+    <path d="M90 300c30 100 150 160 270 120L380 470H90z" fill="#A47B52"/>
+    <!-- cream breast -->
+    <path d="M250 300c60-10 110 20 120 70-20 40-70 60-120 58 30-30 40-80 0-128z" fill="#E6C79E"/>
+    <!-- lit crown and back, toward the lamp -->
+    <path d="M250 130c70-20 140 20 160 90-40-50-90-64-150-50-40 10-80 40-100 70 10-50 40-96 90-110z" fill="#DDB383"/>
+  </g>
+  <!-- wing with darker trailing edge -->
   <path d="M150 262c40-34 120-38 160 0 14 14 8 34-12 40-50 14-110 6-150-14-12-6-10-18 2-26z" fill="#9A6B43"/>
-  <!-- beak -->
-  <path d="M396 202l70 16-70 18z" fill="#F3C26B"/>
-  <!-- eye -->
+  <path d="M148 288c40 20 100 28 150 14-40 2-90-2-136-24z" fill="#7A5434"/>
+  <!-- beak: gold upper, deeper lower -->
+  <path d="M396 202l70 16-70 4z" fill="#F3C26B"/>
+  <path d="M396 222l70-4-70 18z" fill="#D49A3E"/>
+  <!-- eye with a small catchlight -->
   <circle cx="346" cy="200" r="20" fill="#1E2630"/>
+  <circle cx="352" cy="194" r="6" fill="#E3E7EA"/>
 </svg>
