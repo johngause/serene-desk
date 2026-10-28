@@ -6,44 +6,78 @@ bodyClass: home
 ---
 {% import "art.njk" as a %}
 <section class="hero gut" id="hero">
-  <input type="checkbox" id="pull" class="vh" aria-label="Pull the lamp chain to warm the light">
+  <div class="scene-wrap grain" id="scene-wrap">
+    <svg class="scene" id="scene" viewBox="0 0 700 460" preserveAspectRatio="xMaxYMid slice" role="img" aria-label="A home office at night: an oak standing desk with a monitor, a plant, a mug and a desk lamp with a pull chain, under a shelf, beside a window onto a city street.">
+      <defs>
+        <radialGradient id="pool" cx="520" cy="300" r="300" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F3C26B" stop-opacity=".5"/><stop offset=".45" stop-color="#F3C26B" stop-opacity=".12"/><stop offset="1" stop-color="#F3C26B" stop-opacity="0"/></radialGradient>
+        <radialGradient id="poolwarm" cx="520" cy="270" r="190" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFB45A" stop-opacity=".55"/><stop offset="1" stop-color="#FFB45A" stop-opacity="0"/></radialGradient>
+        <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1B222B"/><stop offset="1" stop-color="#1B222B" stop-opacity="0"/></linearGradient>
+      </defs>
+      <rect width="700" height="460" fill="#232C37"/>
+      <rect x="0" y="392" width="700" height="68" fill="url(#floor)"/>
+      <rect x="0" y="388" width="700" height="5" fill="#2B3644"/>
+      <!-- shelf -->
+      <g>
+        <rect x="318" y="140" width="190" height="6" rx="1.5" fill="#C99A68"/>
+        <path d="M332 146 v16 M494 146 v16" stroke="#5B6878" stroke-width="4"/>
+        <rect x="330" y="96" width="12" height="44" fill="#5B6878"/><rect x="343" y="104" width="10" height="36" fill="#7E9A87"/><rect x="354" y="90" width="13" height="50" fill="#8F6C49"/><rect x="368" y="100" width="9" height="40" fill="#3A4756"/><rect x="379" y="108" width="12" height="32" fill="#5B6878"/>
+        <rect x="446" y="122" width="18" height="18" rx="3" fill="#C99A68"/><path d="M464 127 q8 4 0 10" fill="none" stroke="#C99A68" stroke-width="3"/>
+        <path d="M486 140 q-10 -6 -8 -22 q10 6 8 22 M486 140 q6 -14 18 -16 q-2 12 -18 16" fill="#7E9A87"/>
+      </g>
+      <!-- desk -->
+      <rect x="262" y="290" width="330" height="12" rx="2" fill="#C99A68"/>
+      <rect x="262" y="302" width="330" height="4" fill="#A97F52"/>
+      <rect x="284" y="306" width="14" height="82" fill="#5B6878"/><rect x="556" y="306" width="14" height="82" fill="#5B6878"/>
+      <rect x="272" y="386" width="40" height="8" rx="4" fill="#5B6878"/><rect x="542" y="386" width="40" height="8" rx="4" fill="#5B6878"/>
+      <rect x="278" y="318" width="26" height="22" rx="3" fill="#46515F"/>
+      <rect x="326" y="226" width="120" height="54" rx="3" fill="#121821"/><rect x="330" y="230" width="112" height="46" rx="2" fill="#2A3644"/>
+      <rect x="340" y="240" width="52" height="4" rx="2" fill="#9DB4A3" opacity=".7"/><rect x="340" y="250" width="76" height="4" rx="2" fill="#9AA6B0" opacity=".5"/><rect x="340" y="260" width="42" height="4" rx="2" fill="#9AA6B0" opacity=".5"/>
+      <rect x="380" y="280" width="12" height="4" fill="#121821"/>
+      <rect x="338" y="283" width="96" height="7" rx="2" fill="#8F6C49"/>
+      <rect x="276" y="270" width="24" height="20" rx="3" fill="#4C5A55"/><path d="M282 270 q-6 -30 6 -46 q4 22 -2 46 M288 270 q4 -26 20 -36 q-6 20 -14 36" fill="#7E9A87"/>
+      <rect x="462" y="272" width="16" height="18" rx="3" fill="#C99A68"/><path d="M478 276 q8 4 0 10" fill="none" stroke="#C99A68" stroke-width="3"/>
+      <!-- lamp: stem, shade, bulb -->
+      <rect x="518" y="243" width="4" height="47" fill="#5B6878"/><ellipse cx="520" cy="290" rx="22" ry="4" fill="#5B6878"/>
+      <path d="M505 205 H535 L550 243 H490 Z" fill="#C99A68"/><ellipse cx="520" cy="244" rx="30" ry="4" fill="#6B5A3E"/>
+      <!-- lit: everything the lamp does. Hidden entirely when the lamp is off. -->
+      <g class="lit">
+        <rect width="700" height="460" fill="url(#pool)" class="pool"/>
+        <rect width="700" height="460" fill="url(#poolwarm)" class="poolwarm"/>
+        <path d="M490 244 L440 290 L600 290 L550 244 Z" fill="#F3C26B" opacity=".13"/>
+        <ellipse cx="520" cy="244" rx="30" ry="4" fill="#F3C26B"/>
+        <ellipse cx="520" cy="296" rx="90" ry="6" fill="#F3C26B" opacity=".18"/>
+      </g>
+      <!-- the room goes dark when the lamp is off -->
+      <rect class="darken" width="700" height="460" fill="#090E14"/>
+      <!-- window onto the street (outside the room, so it stays as it is) -->
+      <g>
+        <rect x="64" y="60" width="180" height="200" fill="#141C27"/>
+        <g fill="#9AA6B0" opacity=".7"><circle cx="90" cy="84" r="1.3"/><circle cx="132" cy="100" r="1"/><circle cx="168" cy="78" r="1.4"/><circle cx="200" cy="112" r="1"/><circle cx="108" cy="130" r="1"/><circle cx="148" cy="66" r="1"/></g>
+        <circle cx="206" cy="92" r="13" fill="#E3E7EA" opacity=".85"/><circle cx="212" cy="88" r="11" fill="#141C27"/>
+        <rect x="64" y="176" width="42" height="84" fill="#1C2733"/><rect x="108" y="150" width="50" height="110" fill="#19222D"/><rect x="160" y="190" width="40" height="70" fill="#1C2733"/><rect x="202" y="164" width="42" height="96" fill="#19222D"/>
+        <g fill="#F3C26B" opacity=".85"><rect x="116" y="162" width="8" height="10"/><rect x="134" y="196" width="8" height="10"/><rect x="170" y="204" width="8" height="10"/><rect x="214" y="180" width="8" height="10"/><rect x="226" y="222" width="8" height="10"/></g>
+        <g fill="#2A3644"><rect x="116" y="180" width="8" height="10"/><rect x="134" y="162" width="8" height="10"/><rect x="72" y="192" width="8" height="10"/><rect x="88" y="212" width="8" height="10"/><rect x="170" y="226" width="8" height="10"/><rect x="214" y="204" width="8" height="10"/></g>
+        <rect x="64" y="60" width="180" height="200" fill="none" stroke="#3A4756" stroke-width="4"/>
+        <path d="M154 60 V260 M64 160 H244" stroke="#3A4756" stroke-width="3"/>
+        <rect x="56" y="260" width="196" height="8" rx="1.5" fill="#3A4756"/>
+      </g>
+      <!-- spec callouts, attached to the desk (same facts are in the strip below) -->
+      <g aria-hidden="true" font-family="IBM Plex Mono, monospace" font-size="13" fill="#E3E7EA">
+        <path d="M184 340 H276" stroke="#9AA6B0" stroke-width="1.2"/><circle cx="278" cy="340" r="3" fill="#9AA6B0"/>
+        <text x="88" y="344">38 dB motor</text>
+        <path d="M612 290 V388 M606 290 H618 M606 388 H618" stroke="#9AA6B0" stroke-width="1.2" fill="none"/>
+        <text x="624" y="335">25–51 in</text><text x="624" y="352" fill="#9AA6B0" font-size="12">height</text>
+      </g>
+      <!-- chain (animated) + hit area -->
+      <g class="chain" id="chain"><path d="M502 245 V272" stroke="#9AA6B0" stroke-width="1.6" stroke-dasharray="2 2"/><circle cx="502" cy="277" r="4.5" fill="#F3C26B"/></g>
+      <g id="pullbtn" class="pullbtn" aria-label="Pull the lamp chain"><rect x="486" y="246" width="34" height="50" fill="transparent"/></g>
+    </svg>
+  </div>
   <div class="wrap">
     <div class="hero-copy">
-      <p class="label">Standing desks · lamps · small calm things</p>
       <h1>Work, but <em>quieter.</em></h1>
       <p class="lede">Desks and accessories for the room you work in, designed to keep the noise down and your attention where you put it.</p>
       <div class="cta"><a class="btn lamp" href="{{ '/desks/' | url }}">Shop desks</a><a class="btn ghost" href="{{ '/guides/choosing-a-desk-width/' | url }}">Find your size</a></div>
-    </div>
-    <div class="scene-wrap grain">
-      <svg class="scene" viewBox="0 0 520 400" role="img" aria-label="Illustration of an oak standing desk with a monitor, a glowing lamp and a plant. The lamp has a pull chain.">
-        <defs>
-          <radialGradient id="glow" cx="72%" cy="38%" r="55%"><stop offset="0" stop-color="#F3C26B" stop-opacity=".5"/><stop offset=".5" stop-color="#F3C26B" stop-opacity=".1"/><stop offset="1" stop-color="#F3C26B" stop-opacity="0"/></radialGradient>
-          <radialGradient id="glow2" cx="72%" cy="38%" r="48%"><stop offset="0" stop-color="#FFB45A" stop-opacity=".6"/><stop offset="1" stop-color="#FFB45A" stop-opacity="0"/></radialGradient>
-        </defs>
-        <rect width="520" height="400" fill="#232C37"/>
-        <rect class="pool" width="520" height="400" fill="url(#glow)"/>
-        <rect class="pool warm" width="520" height="400" fill="url(#glow2)"/>
-        <rect x="0" y="330" width="520" height="70" fill="#1B222B"/>
-        <rect x="60" y="72" width="120" height="160" rx="4" fill="none" stroke="#3A4756" stroke-width="2"/>
-        <path d="M60 152 H180 M120 72 V232" stroke="#3A4756" stroke-width="2"/>
-        <rect x="140" y="180" width="300" height="12" rx="2" fill="#C99A68"/>
-        <rect x="140" y="192" width="300" height="4" fill="#A97F52"/>
-        <rect x="168" y="196" width="14" height="128" fill="#5B6878"/><rect x="398" y="196" width="14" height="128" fill="#5B6878"/>
-        <rect x="150" y="322" width="50" height="8" rx="4" fill="#5B6878"/><rect x="380" y="322" width="50" height="8" rx="4" fill="#5B6878"/>
-        <rect x="200" y="160" width="120" height="20" rx="2" fill="#8F6C49"/>
-        <rect x="210" y="92" width="100" height="64" rx="3" fill="#121821"/><rect x="214" y="96" width="92" height="56" rx="2" fill="#2A3644"/>
-        <rect x="224" y="108" width="50" height="4" rx="2" fill="#9DB4A3" opacity=".7"/><rect x="224" y="118" width="70" height="4" rx="2" fill="#9AA6B0" opacity=".5"/><rect x="224" y="128" width="40" height="4" rx="2" fill="#9AA6B0" opacity=".5"/>
-        <rect x="255" y="156" width="10" height="6" fill="#121821"/>
-        <path d="M352 120 L396 120 L386 96 L362 96 Z" fill="#C99A68"/><rect x="372" y="120" width="4" height="58" fill="#5B6878"/><ellipse cx="374" cy="178" rx="14" ry="3" fill="#5B6878"/><ellipse cx="374" cy="121" rx="12" ry="3" fill="#F3C26B"/>
-        <path class="beam" d="M352 122 L330 178 L418 178 L396 122 Z" fill="#F3C26B"/>
-        <g class="chain"><path d="M364 121 V152" stroke="#9AA6B0" stroke-width="1.4" stroke-dasharray="2 2"/><circle cx="364" cy="156" r="4" fill="#F3C26B"/></g>
-        <rect x="330" y="166" width="16" height="14" rx="3" fill="#C99A68"/>
-        <path d="M156 180 q-6 -30 6 -46 q4 22 -2 46 M162 180 q4 -26 20 -36 q-6 20 -14 36" fill="#7E9A87"/><rect x="150" y="166" width="22" height="14" rx="3" fill="#4C5A55"/>
-        <text x="458" y="372" fill="#9AA6B0" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="end">38 dB motor · 25–51 in height</text>
-      </svg>
-      <label class="chain-hit" for="pull"><span class="vh">Pull the chain</span></label>
-      {# margin note: pen-stroke arrow toward the chain, no text #}
-      <svg class="note-arrow" viewBox="0 0 90 70" aria-hidden="true"><path d="M6 8 C 30 4, 60 14, 70 52" fill="none" stroke="#F3C26B" stroke-width="2" stroke-linecap="round"/><path d="M58 42 L70 55 L77 38" fill="none" stroke="#F3C26B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
   </div>
 </section>
@@ -55,7 +89,7 @@ bodyClass: home
 </div></section>
 
 <section class="shop gut"><div class="wrap">
-  <div class="shop-head"><h2>The quiet <em>essentials</em></h2><a class="seeall" href="{{ '/desks/' | url }}">Browse all desks</a></div>
+  <div class="shop-head"><h2>The quiet essentials</h2><a class="seeall" href="{{ '/desks/' | url }}">Browse all desks</a></div>
   <div class="grid">
     {% for p in products %}{% if p.id in ["SD-DSK-STL","SD-LGT-LNT","SD-ACC-MAT","SD-ACC-CUB"] %}
       {% include "card.njk" %}
@@ -63,11 +97,21 @@ bodyClass: home
   </div>
 </div></section>
 
+<section class="why gut"><div class="wrap">
+  <div class="why-head">
+    <h2>Why it's quiet</h2>
+    <div class="pending">[COPY PENDING: why Serene Desk — 3 short points on what makes the desks calm]</div>
+  </div>
+  <ol class="why-list">
+    <li><span class="n" aria-hidden="true">1</span><div><h3><span class="pending inline">[COPY PENDING: point 1 headline]</span></h3><div class="pending">[COPY PENDING: point 1, one or two sentences]</div></div></li>
+    <li><span class="n" aria-hidden="true">2</span><div><h3><span class="pending inline">[COPY PENDING: point 2 headline]</span></h3><div class="pending">[COPY PENDING: point 2, one or two sentences]</div></div></li>
+    <li><span class="n" aria-hidden="true">3</span><div><h3><span class="pending inline">[COPY PENDING: point 3 headline]</span></h3><div class="pending">[COPY PENDING: point 3, one or two sentences]</div></div></li>
+  </ol>
+</div></section>
+
 <section class="quiet gut" id="hour-cube"><div class="wrap">
   <div>
-    <p class="label">The Hour Cube</p>
-    <h2>Turn it over. <em class="ul">Start.</em></h2>
-    <svg class="underline" viewBox="0 0 180 14" aria-hidden="true"><path d="M3 9 C 40 3, 90 12, 177 5" fill="none" stroke="#F3C26B" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <h2>Turn it over. <em>Start.</em></h2>
     <p>Each face is a work block: 25, 50 or 90 minutes. No app, no screen, no notifications. When the time's up it glows once and goes dark.</p>
     <p class="mono faces">Faces: 25 min · 50 min · 90 min</p>
     <a class="btn ghost" href="{{ '/products/hour-cube-timer/' | url }}">See the Hour Cube Timer</a>
@@ -79,8 +123,8 @@ bodyClass: home
         <span class="face f50"><i>50</i><b>min</b></span>
         <span class="face f90"><i>90</i><b>min</b></span>
         <span class="face fmark"><svg width="46" height="46" aria-hidden="true"><use href="#mark"/></svg></span>
+        <span class="face fl"></span><span class="face fr"></span>
       </span>
     </button>
-    <svg class="note-arrow cube-arrow" viewBox="0 0 90 70" aria-hidden="true"><path d="M84 8 C 56 2, 28 16, 20 54" fill="none" stroke="#F3C26B" stroke-width="2" stroke-linecap="round"/><path d="M8 40 L20 56 L32 42" fill="none" stroke="#F3C26B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
 </div></section>

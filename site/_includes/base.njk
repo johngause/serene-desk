@@ -10,13 +10,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script>
+/* Runs before paint: remembers the dismissed banner and starts the home page with the lamp off (once per session). */
+(function(){var h=document.documentElement;h.classList.add("js");
+try{if(localStorage.getItem("sd-ann-closed"))h.classList.add("ann-closed")}catch(e){}
+{% if bodyClass == "home" %}try{if(!matchMedia("(prefers-reduced-motion: reduce)").matches&&!sessionStorage.getItem("sd-lamp-seen"))h.setAttribute("data-lamp","off")}catch(e){}{% endif %}})();
+</script>
 <link rel="stylesheet" href="{{ '/assets/site.css' | url }}">
 </head>
 <body class="{{ bodyClass }}">
 <a class="skip" href="#main">Skip to content</a>
 {{ a.sprite() }}
-<div class="ann gut"><div class="wrap"><b>Free delivery on every desk.</b> Try it for 30 nights at home.</div></div>
-<header class="nav gut"><div class="wrap">
+<div class="ann gut" id="ann"><div class="wrap"><p><b>Free delivery on every desk.</b> Try it for 30 nights at home.</p><button type="button" class="annx" id="annx" aria-label="Dismiss announcement"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div></div>
+<header class="nav gut" id="nav"><div class="wrap">
   <a class="brand" href="{{ '/' | url }}"><svg width="30" height="30" aria-hidden="true"><use href="#mark"/></svg>Serene Desk</a>
   <nav aria-label="Main"><ul class="links">
     <li><a href="{{ '/desks/' | url }}">Desks</a></li>
@@ -24,7 +30,7 @@
     <li><a href="{{ '/accessories/' | url }}">Accessories</a></li>
     <li><a href="{{ '/help/' | url }}">Help</a></li>
   </ul></nav>
-  <a class="cartlink" href="{{ '/cart/' | url }}">Cart (2)</a>
+  <a class="cartbtn" href="{{ '/cart/' | url }}" aria-label="Cart, 2 items"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg><span>Cart</span><b class="badge" aria-hidden="true">2</b></a>
 </div></header>
 
 <main id="main">

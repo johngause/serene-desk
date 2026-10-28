@@ -10,8 +10,7 @@ eleventyComputed:
   description: "{{ cat.title }} from Serene Desk, with prices and options."
 ---
 <section class="catpage gut"><div class="wrap">
-  <div class="shop-head"><h1>{{ cat.title }}</h1>
-    <nav aria-label="Categories"><ul class="catnav">{% for c in categories %}<li><a href="{{ ('/' + c.slug + '/') | url }}" {% if c.slug == cat.slug %}aria-current="page"{% endif %}>{{ c.title }}</a></li>{% endfor %}</ul></nav></div>
+  <div class="shop-head"><h1>{{ cat.title }}</h1></div>
   <div class="grid">
     {% for p in products %}{% if p.category == cat.slug %}{% include "card.njk" %}{% endif %}{% endfor %}
   </div>
