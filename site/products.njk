@@ -59,7 +59,7 @@ eleventyComputed:
 
     <section class="block" aria-labelledby="desc-h">
       <h2 id="desc-h">About this {{ p.name | lower }}</h2>
-      <div class="pending">[COPY PENDING: product description for {{ p.name }}]</div>
+      {% if dc and dc.desc %}<p>{{ dc.desc }}</p>{% else %}<div class="pending">[COPY PENDING: product description for {{ p.name }}]</div>{% endif %}
     </section>
 
     {% if dc and dc.dial %}
