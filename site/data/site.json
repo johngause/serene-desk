@@ -1,1 +1,1 @@
-{ "origin": "https://johngause.github.io", "base": "/serene-desk" }
+{ "origin": "https://johngause.github.io", "base": "/serene-desk", "preset": ["SD-ACC-MAT", "SD-LGT-LNT"] }
