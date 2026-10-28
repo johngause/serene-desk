@@ -99,7 +99,18 @@
     disableChips(); // chips only apply to the latest message
     var box = h("div", "sw-m " + (m.role === "user" ? "sw-me" : "sw-bot"));
     if (m.role === "human") box.appendChild(h("span", "sw-who", "Serene Desk team"));
-    body(box, m.text || "");
+    var cites = (m.citations || []).filter(function (c) { return c && /^https?:\/\//i.test(c.url); });
+    var txt = m.text || "", at = cites.length ? txt.search(/\n\s*Sources?:/i) : -1;
+    body(box, at >= 0 ? txt.slice(0, at) : txt); // the relay lifted the "Sources:" block into citations
+    if (cites.length) {
+      var src = h("p", "sw-src", "Sources: ");
+      cites.forEach(function (c, i) {
+        if (i) src.appendChild(document.createTextNode(" · "));
+        var a = h("a", "", c.title || c.url); a.href = c.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+        src.appendChild(a);
+      });
+      box.appendChild(src);
+    }
     if (m.pending) box.classList.add("pending");
     if (m.options && m.options.length) {
       var row = h("div", "sw-chips");

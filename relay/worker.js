@@ -42,7 +42,14 @@ function normalize(m) {
   const role = m.author?.type === "user" ? "user" : m.source?.type === "ultimate" ? "agent" : "human";
   const options = (Array.isArray(c.actions) ? c.actions : []).filter((a) => a?.type === "reply")
     .map((a) => ({ label: a.text, payload: a.payload ?? a.text }));
-  return { id: m.id, role, text: c.text || c.altText || "", options, received: m.received };
+  // The AI agent ends answers with "Sources:" then lines like " * Title [https://url]".
+  const citations = [];
+  const at = (c.text || "").search(/\n\s*Sources?:/i);
+  if (at >= 0) for (const l of c.text.slice(at).split("\n")) {
+    const x = /^\W*(.+?)\s*\[(https?:\/\/[^\]\s]+)\]\s*$/.exec(l);
+    if (x) citations.push({ title: x[1], url: x[2] });
+  }
+  return { id: m.id, role, text: c.text || c.altText || "", options, received: m.received, citations };
 }
 
 export default {
