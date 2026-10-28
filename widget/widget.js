@@ -142,7 +142,7 @@
     return newSession();
   }
   function newSession() {
-    return call("POST", "/session").then(function (s) { S = s; save(); });
+    return call("POST", "/session").then(function (s) { S = s; retried = false; save(); });
   }
 
   function fail(e, again) {
@@ -159,14 +159,16 @@
     if (busy) return;
     busy = true; el.send.disabled = true;
     var tmp = addMsg({ role: "user", text: p.label || p.text, pending: true });
+    tmp.dataset.opt = "1"; // marked at creation so an early polled echo reconciles
     note("");
     ensureSession().then(function () {
       return call("POST", "/message", auth(p));
     }).then(function () {
-      tmp.classList.remove("pending"); tmp.dataset.opt = "1";
+      tmp.classList.remove("pending");
       startFast();
     }).catch(function (e) {
       tmp.remove();
+      if (p.text && e.status !== 401 && !el.input.value) el.input.value = p.text;
       fail(e, function () { busy = false; el.send.disabled = false; send(p); });
     }).then(function () { busy = false; el.send.disabled = false; });
   }
