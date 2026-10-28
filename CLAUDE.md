@@ -28,6 +28,7 @@
 
 Fill these in as each phase lands; run the ones for what a branch touches before merging.
 
+- Playwright: no bundled browsers here; launch with `chromium.launch({ channel: "chrome" })` (system Chrome).
 - Site: build with no errors; `curl` a product page and see price and specs in the HTML; Playwright screenshots of every changed page at 1440px and 390px, reviewed by Claude before calling it done; Lighthouse accessibility ≥ 90.
 - Relay: the curl sequence in handoff §6 (session → message → poll), plus a bad token returns 401.
 - Test runner: `--dry-run` on 3 tests. Real runs call Zendesk; ask before running the full set.
