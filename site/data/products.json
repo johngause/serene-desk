@@ -1,0 +1,337 @@
+[
+ {
+  "id": "SD-DSK-STL",
+  "slug": "still-standing-desk",
+  "name": "Still Standing Desk",
+  "category": "desks",
+  "art": "desk",
+  "price": 649,
+  "sale": null,
+  "widths": [
+   {
+    "inches": 48,
+    "price": 649
+   },
+   {
+    "inches": 60,
+    "price": 729
+   },
+   {
+    "inches": 72,
+    "price": 799
+   }
+  ],
+  "finishes": [
+   {
+    "name": "oak",
+    "hex": "#C99A68"
+   },
+   {
+    "name": "walnut",
+    "hex": "#6B4A33"
+   },
+   {
+    "name": "ash",
+    "hex": "#E2CFAE"
+   }
+  ],
+  "variants": [
+   {
+    "sku": "SD-DSK-STL-48-OAK",
+    "width": 48,
+    "finish": "oak",
+    "price": 649
+   },
+   {
+    "sku": "SD-DSK-STL-48-WALNUT",
+    "width": 48,
+    "finish": "walnut",
+    "price": 649
+   },
+   {
+    "sku": "SD-DSK-STL-48-ASH",
+    "width": 48,
+    "finish": "ash",
+    "price": 649
+   },
+   {
+    "sku": "SD-DSK-STL-60-OAK",
+    "width": 60,
+    "finish": "oak",
+    "price": 729
+   },
+   {
+    "sku": "SD-DSK-STL-60-WALNUT",
+    "width": 60,
+    "finish": "walnut",
+    "price": 729
+   },
+   {
+    "sku": "SD-DSK-STL-60-ASH",
+    "width": 60,
+    "finish": "ash",
+    "price": 729
+   },
+   {
+    "sku": "SD-DSK-STL-72-OAK",
+    "width": 72,
+    "finish": "oak",
+    "price": 799
+   },
+   {
+    "sku": "SD-DSK-STL-72-WALNUT",
+    "width": 72,
+    "finish": "walnut",
+    "price": 799
+   },
+   {
+    "sku": "SD-DSK-STL-72-ASH",
+    "width": 72,
+    "finish": "ash",
+    "price": 799
+   }
+  ]
+ },
+ {
+  "id": "SD-DSK-LDG",
+  "slug": "ledger-fixed-desk",
+  "name": "Ledger Fixed Desk",
+  "category": "desks",
+  "art": "ledger",
+  "price": 449,
+  "sale": null,
+  "widths": [
+   {
+    "inches": 48,
+    "price": 449
+   },
+   {
+    "inches": 60,
+    "price": 519
+   }
+  ],
+  "finishes": [
+   {
+    "name": "oak",
+    "hex": "#C99A68"
+   },
+   {
+    "name": "walnut",
+    "hex": "#6B4A33"
+   },
+   {
+    "name": "ash",
+    "hex": "#E2CFAE"
+   }
+  ],
+  "variants": [
+   {
+    "sku": "SD-DSK-LDG-48-OAK",
+    "width": 48,
+    "finish": "oak",
+    "price": 449
+   },
+   {
+    "sku": "SD-DSK-LDG-48-WALNUT",
+    "width": 48,
+    "finish": "walnut",
+    "price": 449
+   },
+   {
+    "sku": "SD-DSK-LDG-48-ASH",
+    "width": 48,
+    "finish": "ash",
+    "price": 449
+   },
+   {
+    "sku": "SD-DSK-LDG-60-OAK",
+    "width": 60,
+    "finish": "oak",
+    "price": 519
+   },
+   {
+    "sku": "SD-DSK-LDG-60-WALNUT",
+    "width": 60,
+    "finish": "walnut",
+    "price": 519
+   },
+   {
+    "sku": "SD-DSK-LDG-60-ASH",
+    "width": 60,
+    "finish": "ash",
+    "price": 519
+   }
+  ]
+ },
+ {
+  "id": "SD-DSK-NOK",
+  "slug": "nook-wall-desk",
+  "name": "Nook Wall Desk",
+  "category": "desks",
+  "art": "nook",
+  "price": 329,
+  "sale": null,
+  "widths": [],
+  "finishes": [
+   {
+    "name": "oak",
+    "hex": "#C99A68"
+   },
+   {
+    "name": "ash",
+    "hex": "#E2CFAE"
+   }
+  ],
+  "sizeNote": "One size",
+  "variants": [
+   {
+    "sku": "SD-DSK-NOK-OAK",
+    "width": null,
+    "finish": "oak",
+    "price": 329
+   },
+   {
+    "sku": "SD-DSK-NOK-ASH",
+    "width": null,
+    "finish": "ash",
+    "price": 329
+   }
+  ]
+ },
+ {
+  "id": "SD-LGT-LNT",
+  "slug": "lantern-desk-lamp",
+  "name": "Lantern Desk Lamp",
+  "category": "lighting",
+  "art": "lamp",
+  "price": 129,
+  "sale": null,
+  "widths": [],
+  "finishes": [],
+  "sizeNote": "One size"
+ },
+ {
+  "id": "SD-LGT-BAR",
+  "slug": "monitor-light-bar",
+  "name": "Monitor Light Bar",
+  "category": "lighting",
+  "art": "bar",
+  "price": 79,
+  "sale": 59,
+  "widths": [],
+  "finishes": [],
+  "sizeNote": "One size"
+ },
+ {
+  "id": "SD-ACC-MAT",
+  "slug": "wool-felt-desk-mat",
+  "name": "Wool Felt Desk Mat",
+  "category": "accessories",
+  "art": "mat",
+  "price": 48,
+  "sale": 36,
+  "widths": [],
+  "finishes": [
+   {
+    "name": "charcoal",
+    "hex": "#3E454D"
+   },
+   {
+    "name": "moss",
+    "hex": "#4C5A55"
+   }
+  ]
+ },
+ {
+  "id": "SD-ACC-SHF",
+  "slug": "monitor-shelf",
+  "name": "Monitor Shelf",
+  "category": "accessories",
+  "art": "shelf",
+  "price": 119,
+  "sale": 89,
+  "widths": [],
+  "finishes": [
+   {
+    "name": "oak",
+    "hex": "#C99A68"
+   },
+   {
+    "name": "walnut",
+    "hex": "#6B4A33"
+   }
+  ]
+ },
+ {
+  "id": "SD-ACC-CBL",
+  "slug": "cable-tray",
+  "name": "Cable Tray",
+  "category": "accessories",
+  "art": "tray",
+  "price": 39,
+  "sale": null,
+  "widths": [],
+  "finishes": [],
+  "sizeNote": "One size"
+ },
+ {
+  "id": "SD-ACC-CUB",
+  "slug": "hour-cube-timer",
+  "name": "Hour Cube Timer",
+  "category": "accessories",
+  "art": "cube",
+  "price": 34,
+  "sale": null,
+  "widths": [],
+  "finishes": [],
+  "sizeNote": "One size (25 / 50 / 90 min faces)"
+ },
+ {
+  "id": "SD-ACC-PNL",
+  "slug": "wool-acoustic-panels",
+  "name": "Wool Acoustic Panels (set of 4)",
+  "category": "accessories",
+  "art": "panels",
+  "price": 149,
+  "sale": 119,
+  "widths": [],
+  "finishes": [
+   {
+    "name": "charcoal",
+    "hex": "#3E454D"
+   },
+   {
+    "name": "moss",
+    "hex": "#4C5A55"
+   },
+   {
+    "name": "oat",
+    "hex": "#D9CDB0"
+   }
+  ]
+ },
+ {
+  "id": "SD-ACC-FTR",
+  "slug": "rocking-footrest",
+  "name": "Rocking Footrest",
+  "category": "accessories",
+  "art": "foot",
+  "price": 59,
+  "sale": null,
+  "widths": [],
+  "finishes": [],
+  "sizeNote": "One size"
+ },
+ {
+  "id": "SD-ACC-PLT",
+  "slug": "desk-planter",
+  "name": "Desk Planter",
+  "category": "accessories",
+  "art": "plant",
+  "price": 28,
+  "sale": null,
+  "widths": [],
+  "finishes": [],
+  "sizeNote": "One size"
+ }
+]

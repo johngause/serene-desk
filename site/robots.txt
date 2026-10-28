@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://johngause.github.io/serene-desk/sitemap.xml

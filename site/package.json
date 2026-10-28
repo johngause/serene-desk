@@ -1,0 +1,7 @@
+{
+  "name": "serene-desk-site",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "eleventy", "serve": "eleventy --serve" },
+  "devDependencies": { "@11ty/eleventy": "^3.0.0" }
+}

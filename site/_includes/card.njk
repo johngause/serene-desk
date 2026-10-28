@@ -1,0 +1,11 @@
+{% import "art.njk" as a %}
+<article class="prod">
+  <a class="img grain" href="{{ ('/products/' + p.slug + '/') | url }}" tabindex="-1" aria-hidden="true">
+    {% if p.sale %}<span class="sale">SALE</span>{% endif %}
+    {{ a.art(p.art) }}
+  </a>
+  <div class="row"><h3 class="name"><a href="{{ ('/products/' + p.slug + '/') | url }}">{{ p.name }}</a></h3>
+    <p class="price {% if p.sale %}on{% endif %}">{% if p.widths.length > 1 %}from {% endif %}{% if p.sale %}{{ p.sale | money }}<s><span class="vh">was </span>{{ p.price | money }}</s>{% else %}{{ p.price | money }}{% endif %}</p></div>
+  <div class="row"><p class="sku">{{ p.id }}{% if p.widths.length %} · {% for w in p.widths %}{{ w.inches }}{% if not loop.last %} / {% endif %}{% endfor %} in{% endif %}</p>
+    {% if p.finishes.length %}<span class="swatchrow" aria-hidden="true">{% for f in p.finishes %}<i class="dot" style="background:{{ f.hex }}"></i>{% endfor %}</span>{% endif %}</div>
+</article>
