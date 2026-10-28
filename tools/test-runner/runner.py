@@ -8,6 +8,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 QUIET, MAX_WAIT, POLL = 12, 120, 2  # s of agent silence ends a turn; cap per turn; poll interval
+GREETING_WAIT = 8  # s to wait for the greeting before the first turn
 HERE = Path(__file__).parent
 COLS = {"id", "category", "turns", "expected", "source", "set"}
 
@@ -71,6 +72,14 @@ def text_of(m):
     return c.get("text") or json.dumps(c)[:500]
 
 
+def stamp(m, t0):
+    """Seconds since t0 from Zendesk's own receive time, so polling lag doesn't skew latency."""
+    try:
+        return round(datetime.fromisoformat(m["received"].replace("Z", "+00:00")).timestamp() - t0, 2)
+    except (KeyError, ValueError):
+        return round(time.time() - t0, 2)
+
+
 def handed_off(zd, cid, responder):
     """Control passed on = the conversation's active responder is no longer the AI agent."""
     conv = zd.call("GET", f"/conversations/{cid}").get("conversation", {})
@@ -84,6 +93,16 @@ def run_test(zd, test, responder):
                                              "activeSwitchboardIntegrationId": responder})["conversation"]["id"]
     t0 = time.time()
     seen, msgs, handoff = set(), [], False
+    # Let the AI agent's greeting land first, like a real visitor, so it isn't timed as a reply.
+    while time.time() - t0 < GREETING_WAIT:
+        time.sleep(POLL)
+        new = [m for m in zd.call("GET", f"/conversations/{cid}/messages").get("messages", []) if m["id"] not in seen]
+        for m in new:
+            seen.add(m["id"])
+            msgs.append({"t": stamp(m, t0), "author": m.get("author", {}).get("type"),
+                         "text": text_of(m), "id": m["id"], "greeting": True})
+        if new:
+            break
     for turn in test["turns"]:
         sent = time.time()
         zd.call("POST", f"/conversations/{cid}/messages",
@@ -96,7 +115,7 @@ def run_test(zd, test, responder):
                     continue
                 seen.add(m["id"])
                 who = m.get("author", {}).get("type")
-                msgs.append({"t": round(time.time() - t0, 2), "author": who, "text": text_of(m), "id": m["id"]})
+                msgs.append({"t": stamp(m, t0), "author": who, "text": text_of(m), "id": m["id"]})
                 if who == "business":
                     last_agent = time.time()
             if last_agent and time.time() - last_agent >= QUIET:
@@ -106,11 +125,15 @@ def run_test(zd, test, responder):
         handoff = handed_off(zd, cid, responder)
         if handoff:
             break  # a human owns it now; the AI agent won't answer further turns
-    agent = [m for m in msgs if m["author"] == "business"]
+    agent = [m for m in msgs if m["author"] == "business" and not m.get("greeting")]
+    users = [m["t"] for m in msgs if m["author"] == "user"]
+    first = [m for m in agent if users and m["t"] >= users[0]]
+    last = [m for m in agent if users and m["t"] >= users[-1]]
     return {"id": test["id"], "category": test["category"], "set": test["set"], "conversation_id": cid,
             "turns": test["turns"], "messages": msgs, "handoff": handoff,
-            "first_reply_s": agent[0]["t"] if agent else None,  # seconds from conversation start
-            "final_reply_s": agent[-1]["t"] if agent else None,
+            # seconds from sending the first turn to its first reply, and from the last turn to the final reply
+            "first_reply_s": round(first[0]["t"] - users[0], 2) if first else None,
+            "final_reply_s": round(last[-1]["t"] - users[-1], 2) if last else None,
             "final_answer": agent[-1]["text"] if agent else ""}
 
 
