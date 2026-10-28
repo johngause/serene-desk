@@ -1,0 +1,37 @@
+/* Serene Desk chat widget. Tokens come from site.css (:root). */
+.sw{position:fixed;right:20px;bottom:20px;z-index:40;font:400 14px/1.45 var(--body)}
+.sw-launch{width:60px;height:60px;border-radius:50%;border:1px solid var(--line);background:var(--slate);cursor:pointer;padding:0;display:grid;place-items:center;box-shadow:0 0 0 6px rgba(243,194,107,.12),0 0 34px rgba(243,194,107,.4),0 10px 30px rgba(0,0,0,.4)}
+.sw-launch img{width:46px;height:46px;border-radius:50%;display:block}
+.sw-launch:hover{box-shadow:0 0 0 7px rgba(243,194,107,.2),0 0 42px rgba(243,194,107,.55),0 10px 30px rgba(0,0,0,.4)}
+.sw-panel{position:absolute;right:0;bottom:0;width:360px;max-width:calc(100vw - 40px);background:var(--slate);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden;display:flex;flex-direction:column;color:var(--mist)}
+.sw-panel[hidden],.sw-launch[hidden],.sw-typing[hidden]{display:none}
+.sw-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.sw-av{width:32px;height:32px;border-radius:50%;box-shadow:0 0 0 1px var(--line),0 0 18px rgba(243,194,107,.35)}
+.sw-head b{font-weight:600;font-size:14px;display:block;line-height:1.2}
+.sw-head small{display:block;color:var(--fog);font-size:12px;line-height:1.2}
+.sw-x{margin-left:auto;width:32px;height:32px;border:0;border-radius:50%;background:none;color:var(--fog);font-size:20px;cursor:pointer}
+.sw-x:hover{color:var(--mist)}
+.sw-log{padding:14px;display:flex;flex-direction:column;gap:10px;height:min(380px,50vh);overflow-y:auto}
+.sw-m{max-width:86%;padding:9px 12px;border-radius:14px;overflow-wrap:anywhere}
+.sw-m p{margin:0}.sw-m p+p{margin-top:6px}
+.sw-bot{background:var(--dusk);border-bottom-left-radius:4px;align-self:flex-start}
+.sw-me{background:var(--mist);color:var(--dusk);border-bottom-right-radius:4px;align-self:flex-end}
+.sw-m.pending{opacity:.6}
+.sw-m a{color:var(--sage)}.sw-me a{color:var(--dusk)}
+.sw-m p.sw-src{font-size:12px;color:var(--sage)}
+.sw-who{display:block;font:500 11px var(--mono);color:var(--fog);margin-bottom:3px}
+.sw-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sw-chip{border:1px solid var(--sage);background:none;color:var(--sage);border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.sw-chip:hover:not(:disabled){background:var(--sage);color:var(--dusk)}
+.sw-chip:disabled{opacity:.45;cursor:default}
+.sw-note{align-self:center;font-size:12px;color:var(--ember);text-align:center}
+.sw-typing{display:flex;gap:4px;padding:0 14px 12px}
+.sw-typing i{width:6px;height:6px;border-radius:50%;background:var(--fog);animation:sw-b 1.2s infinite ease-in-out}
+.sw-typing i:nth-child(2){animation-delay:.15s}.sw-typing i:nth-child(3){animation-delay:.3s}
+@keyframes sw-b{0%,60%,100%{opacity:.3}30%{opacity:1}}
+.sw-form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);align-items:center}
+.sw-in{flex:1;min-width:0;background:var(--dusk);border:1px solid transparent;border-radius:999px;padding:9px 14px;color:var(--mist);font:inherit}
+.sw-in::placeholder{color:var(--fog)}
+.sw-send{border:0;border-radius:999px;background:var(--lamp);color:var(--dusk);font:600 14px var(--body);padding:9px 16px;cursor:pointer}
+.sw-send:disabled{opacity:.5;cursor:default}
+@media (prefers-reduced-motion:reduce){.sw-typing i{animation:none;opacity:.7}}

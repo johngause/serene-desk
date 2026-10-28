@@ -54,8 +54,9 @@ try{if(localStorage.getItem("sd-ann-closed"))h.classList.add("ann-closed")}catch
 {% if config.widget == "zendesk" and config.zendeskWidgetKey %}
 <script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key={{ config.zendeskWidgetKey }}"></script>
 {% elif config.widget == "custom" %}
-{# Phase 4 hook: the custom widget (widget/ dir) loads here. Does nothing yet. #}
-<script id="serene-widget-hook">window.SereneWidget = { relayUrl: {{ config.relayUrl | dump | safe }}, agentName: {{ config.agentName | dump | safe }}, loaded: false };</script>
+<link rel="stylesheet" href="{{ '/widget/widget.css' | url }}">
+<script>window.SereneWidget = { relayUrl: {{ config.relayUrl | dump | safe }}, agentName: {{ config.agentName | dump | safe }}, brandName: {{ config.brandName | dump | safe }}, pollFastMs: {{ config.pollFastMs | default(1500) }}, pollIdleMs: {{ config.pollIdleMs | default(10000) }}, quietMs: {{ config.quietMs | default(12000) }}, avatar: {{ '/widget/wren-avatar.svg' | url | dump | safe }} };</script>
+<script src="{{ '/widget/widget.js' | url }}" defer></script>
 {% endif %}
 </body>
 </html>
