@@ -137,7 +137,7 @@
         if (c.state !== "running") { c.resume().then(function () { if (dir || raf || loop) humStart(); }).catch(function () {}); return; } // resume() is async: retry once running
         var o = c.createOscillator(), o2 = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
         o.type = "sine"; o.frequency.value = 62; o2.type = "triangle"; o2.frequency.value = 124.7;
-        f.type = "lowpass"; f.frequency.value = 220; g.gain.value = 0; g.gain.setTargetAtTime(0.012, c.currentTime, 0.15);
+        f.type = "lowpass"; f.frequency.value = 220; g.gain.value = 0; g.gain.setTargetAtTime(0.024, c.currentTime, 0.15);
         o.connect(f); o2.connect(f); f.connect(g); g.connect(c.destination); o.start(); o2.start(); hum = { c: c, o: o, o2: o2, g: g };
       } catch (e) {}
     };
