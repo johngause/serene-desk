@@ -1,6 +1,6 @@
 {% import "art.njk" as a %}
 <ul class="lines" id="lines">
-  {% for p in products %}{% if p.id == "SD-ACC-MAT" or p.id == "SD-LGT-LNT" %}
+  {% for p in products %}{% if p.id in site.preset %}
   <li class="line" data-id="{{ p.id }}" data-qty="1" data-price="{{ p.sale or p.price }}">
     <div class="lineart grain">{{ a.art(p.art) }}</div>
     <div><p class="name"><a href="{{ ('/products/' + p.slug + '/') | url }}">{{ p.name }}</a></p>

@@ -236,13 +236,22 @@
 
   /* ---- cart: sessionStorage state; absent/empty = the demo preset that the HTML already shows ---- */
   var CK = "sd-cart";
-  var readCart = function () { try { var c = JSON.parse(sessionStorage.getItem(CK)); return Array.isArray(c) ? c : null; } catch (e) { return null; } };
+  var catEl = d.getElementById("catalog"), cat = catEl ? JSON.parse(catEl.textContent) : null;
+  // keep only well-formed lines (known id, integer qty clamped to 1..99); a non-empty cart with no valid line falls back to the preset
+  var readCart = function () {
+    try {
+      var c = JSON.parse(sessionStorage.getItem(CK)); if (!Array.isArray(c)) return null;
+      var ok = c.filter(function (l) { return l && typeof l === "object" && typeof l.id === "string" && Number.isInteger(l.qty) && (!cat || cat[l.id]); })
+        .map(function (l) { l.qty = Math.max(1, Math.min(99, l.qty)); if (typeof l.sku !== "string") delete l.sku; if (typeof l.price !== "number") delete l.price; return l; });
+      return ok.length || !c.length ? ok : null;
+    } catch (e) { return null; }
+  };
   var saveCart = function (c) { try { c ? sessionStorage.setItem(CK, JSON.stringify(c)) : sessionStorage.removeItem(CK); } catch (e) {} };
   var badge = d.querySelector(".badge"), setBadge = function (c) { // header count follows the cart; default stays as rendered
-    if (badge && c) badge.firstChild.nodeValue = c.reduce(function (n, l) { return n + l.qty; }, 0);
+    try { if (badge && c) badge.firstChild.nodeValue = c.reduce(function (n, l) { return n + l.qty; }, 0); } catch (e) {}
   };
   setBadge(readCart());
-  var lines = d.getElementById("lines"), catEl = d.getElementById("catalog");
+  var lines = d.getElementById("lines");
   var onCartChange = function () {};
   var optForm = d.querySelector("form.opts[data-id]");
   if (optForm) optForm.addEventListener("submit", function (e) { // product page: add to the same cart, then show it
@@ -251,11 +260,14 @@
     if (l) l.qty++; else cart.push({ id: id, qty: 1, sku: sku ? sku.textContent : undefined, price: w ? +w.dataset.price : undefined });
     saveCart(cart);
   });
-  function presetCart() { // read from the server-rendered preset when available, else the known preset ids
-    return [{ id: "SD-ACC-MAT", qty: 1 }, { id: "SD-LGT-LNT", qty: 1 }];
+  var presetIds = null; // read once, before the first redraw replaces the server-rendered lines
+  function presetCart() { // ids come from site.json via the server-rendered HTML (summary.njk li[data-id], or the product form's data-preset)
+    var ids = presetIds || (presetIds = optForm ? optForm.dataset.preset.split(" ") : [].map.call(d.querySelectorAll("#lines li[data-id]"), function (li) { return li.dataset.id; }));
+    return ids.map(function (id) { return { id: id, qty: 1 }; });
   }
+  if (lines) presetCart();
   if (lines && catEl) {
-    var cat = JSON.parse(catEl.textContent), money = function (n) { return "$" + n; };
+    var money = function (n) { return "$" + n; };
     var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
     var siteBase = lines.querySelector("a") ? lines.querySelector("a").getAttribute("href").replace(/products\/[^/]+\/$/, "") : "/";
     var rest = d.getElementById("restore"), skus = {};
@@ -265,16 +277,18 @@
       if (!cart) { cart = presetCart(); }
       lines.innerHTML = cart.map(function (l, i) {
         var p = cat[l.id]; if (!p) return "";
-        var unit = l.price != null ? l.price : (p.sale || p.price), sale = l.price == null && p.sale; total += unit * l.qty;
+        var unit = l.price != null ? l.price : (p.sale || p.price), sale = !!p.sale, was = sale && l.price == null; total += unit * l.qty;
         var sk = l.sku || skus[l.id] || l.id;
         return '<li class="line" data-i="' + i + '" data-id="' + esc(l.id) + '" data-qty="' + l.qty + '" data-price="' + unit + '">' +
           '<div class="lineart grain"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><use href="#a-' + esc(p.art) + '"/></svg></div>' +
           '<div><p class="name"><a href="' + esc(siteBase) + 'products/' + esc(p.slug) + '/">' + esc(p.name) + '</a></p>' +
           '<p class="sku mono">' + esc(sk) + ' · Qty ' + l.qty + '</p>' + (sale ? '<p class="saletag mono">Sale price</p>' : '') +
-          '<div class="qty"><button type="button" data-d="-1" aria-label="Decrease quantity of ' + esc(p.name) + '"' + (l.qty < 2 ? " disabled" : "") + '>−</button><output aria-live="polite">' + l.qty + '</output><button type="button" data-d="1" aria-label="Increase quantity of ' + esc(p.name) + '">+</button>' +
+          '<div class="qty"><button type="button" data-d="-1" aria-label="Decrease quantity of ' + esc(p.name) + '"' + (l.qty < 2 ? " disabled" : "") + '>−</button><output aria-live="polite">' + l.qty + '</output><button type="button" data-d="1" aria-label="Increase quantity of ' + esc(p.name) + '"' + (l.qty > 98 ? " disabled" : "") + '>+</button>' +
           '<button type="button" class="rm" data-rm="1" aria-label="Remove ' + esc(p.name) + '">Remove</button></div></div>' +
-          '<p class="price' + (sale ? ' on' : '') + '">' + money(unit * l.qty) + (sale ? '<s><span class="vh">was </span>' + money(p.price * l.qty) + '</s>' : '') + '</p></li>';
+          '<p class="price' + (sale ? ' on' : '') + '">' + money(unit * l.qty) + (was ? '<s><span class="vh">was </span>' + money(p.price * l.qty) + '</s>' : '') + '</p></li>';
       }).join("");
+      if (!cart.length) lines.innerHTML = '<li class="pending">[COPY PENDING: empty cart message]</li>';
+      d.querySelectorAll(".totals").forEach(function (e) { e.hidden = !cart.length; });
       setBadge(cart);
       d.querySelectorAll(".subtotal").forEach(function (e) { e.textContent = money(total); });
       if (rest) rest.hidden = false;
@@ -284,7 +298,7 @@
     lines.addEventListener("click", function (e) {
       var b = e.target.closest("button"), li = e.target.closest("li"); if (!b || !li) return;
       var i = +li.dataset.i;
-      mutate(function (c) { if (b.dataset.rm) c.splice(i, 1); else c[i].qty = Math.max(1, c[i].qty + +b.dataset.d); });
+      mutate(function (c) { if (b.dataset.rm) c.splice(i, 1); else c[i].qty = Math.max(1, Math.min(99, c[i].qty + +b.dataset.d)); });
       var again = lines.querySelector('li[data-i="' + Math.min(i, lines.children.length - 1) + '"] ' + (b.dataset.rm ? "" : 'button[data-d="' + b.dataset.d + '"]'));
       if (again) again.focus(); else if (rest) rest.focus();
     });
