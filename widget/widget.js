@@ -5,6 +5,8 @@
   var C = window.SereneWidget || {};
   if (!C.relayUrl) return;
   var KEY = "sd-chat", S = null, seen = {}, lastId = null;
+  // a reload starts a fresh conversation (next open calls POST /session); links and the logo keep it
+  try { var nav0 = performance.getEntriesByType("navigation")[0]; if (nav0 && nav0.type === "reload") sessionStorage.removeItem(KEY); } catch (e) {}
   var fast = false, fastStart = 0, lastNew = 0, timer = null, open = false, busy = false, backoff = 0, retried = false;
   var el = {};
 

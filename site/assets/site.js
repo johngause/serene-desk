@@ -45,8 +45,9 @@
       if (auto && !(navigator.userActivation && navigator.userActivation.hasBeenActive)) return;
       var c = ctx(); if (!c) return;
       if (!clickBuf) { loadClick(); return; }
-      if (c.state !== "running") return; // never queue a sound that would fire late
-      var s = c.createBufferSource(); s.buffer = clickBuf; s.connect(c.destination); s.start();
+      var play = function () { var s = c.createBufferSource(); s.buffer = clickBuf; s.connect(c.destination); s.start(); };
+      if (c.state === "running") play();
+      else if (!auto) c.resume().then(play).catch(function () {}); // context made before any gesture: resume() is async, so wait for it on the click
     } catch (e) {}
   }
   function cubeTick() {
@@ -132,7 +133,8 @@
     var humStart = function () { // a very faint low hum while moving; silent if audio isn't allowed yet
       if (hum || reduce || !(navigator.userActivation && navigator.userActivation.hasBeenActive)) return;
       try {
-        var c = ctx(); if (!c || c.state !== "running") return;
+        var c = ctx(); if (!c) return;
+        if (c.state !== "running") { c.resume().then(function () { if (dir || raf || loop) humStart(); }).catch(function () {}); return; } // resume() is async: retry once running
         var o = c.createOscillator(), o2 = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
         o.type = "sine"; o.frequency.value = 62; o2.type = "triangle"; o2.frequency.value = 124.7;
         f.type = "lowpass"; f.frequency.value = 220; g.gain.value = 0; g.gain.setTargetAtTime(0.012, c.currentTime, 0.15);
@@ -323,6 +325,8 @@
     var order = d.getElementById("order"), promo = d.getElementById("promo");
     if (order) order.addEventListener("submit", function (e) { e.preventDefault(); show(q && d.getElementById("err-" + q) && q !== "PROMO-04" ? q : "PAY-201"); });
     if (promo) promo.addEventListener("submit", function (e) { e.preventDefault(); show("PROMO-04"); });
+    // the form's GET fallback (script late or cached) lands here with ?promo=: show the same error, then drop the param so a reload is clean
+    if (promo && new URLSearchParams(location.search).has("promo")) { show("PROMO-04"); try { var u = new URLSearchParams(location.search); u.delete("promo"); history.replaceState(null, "", location.pathname + (u.toString() ? "?" + u : "") + location.hash); } catch (e) {} }
   }
 
   /* ---- help page: open whichever widget is present ---- */
