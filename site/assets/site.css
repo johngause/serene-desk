@@ -319,3 +319,13 @@ p,li{text-wrap:pretty}
 .restore{margin:0 0 12px}
 .qty button:focus-visible,.rm:focus-visible,.restore:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
 .qty .rm{width:auto;height:auto;border:0;background:none}
+
+/* prose lists + tables (content pages) */
+.prose ul,.prose ol{color:var(--fog);max-width:62ch;margin:16px 0;padding-left:1.4em}
+.prose ul{list-style:disc}
+.prose ol{list-style:decimal}
+.prose li{margin-bottom:8px;padding-left:4px}
+.prose table{border-collapse:collapse;margin:20px 0;font-size:15px;min-width:min(100%,520px)}
+.prose th,.prose td{text-align:left;padding:10px 24px 10px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.prose thead th{font:500 12px var(--mono);color:var(--fog);text-transform:uppercase}
+.prose td{color:var(--fog)}
