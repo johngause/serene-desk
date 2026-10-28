@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Serene Desk work</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--dusk:#1E2630;--slate:#28323E;--line:#3A4756;--mist:#E3E7EA;--fog:#9AA6B0;--lamp:#F3C26B;--sage:#9DB4A3;--ember:#E07A5F}
+*{box-sizing:border-box}
+body{margin:0;background:var(--dusk);color:var(--mist);font:400 15px/1.5 "Hanken Grotesk",system-ui,sans-serif;padding:32px 16px 64px}
+main{max-width:860px;margin:0 auto}
+h1{font:400 44px/1.1 "Instrument Serif",serif;margin:0 0 4px}
+h1 em{color:var(--lamp)}
+.sub{color:var(--fog);margin:0 0 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.sub button{font:inherit;color:var(--dusk);background:var(--lamp);border:0;border-radius:6px;padding:4px 12px;cursor:pointer}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
+a{color:var(--sage)}
+.bar{height:8px;background:var(--slate);border-radius:4px;overflow:hidden;margin:0 0 28px}
+.bar i{display:block;height:100%;background:var(--lamp);transition:width .4s ease-out}
+details{background:var(--slate);border:1px solid var(--line);border-radius:10px;margin:0 0 10px}
+details.closed{opacity:.6}
+summary{list-style:none;cursor:pointer;padding:14px 16px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+summary::-webkit-details-marker{display:none}
+.dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--fog)}
+.open.started .dot{border-color:var(--lamp);background:radial-gradient(var(--lamp) 40%,transparent 45%)}
+.closed .dot{background:var(--sage);border-color:var(--sage)}
+.t{font-weight:600}
+.n{font:400 13px "IBM Plex Mono",monospace;color:var(--fog);white-space:nowrap}
+.mini{height:4px;background:var(--dusk);border-radius:2px;margin-top:6px;overflow:hidden}
+.mini i{display:block;height:100%;background:var(--lamp)}
+.closed .mini i{background:var(--sage)}
+.body{padding:0 16px 16px 40px;color:var(--fog);font-size:14px}
+.body ul{padding-left:18px;margin:6px 0}
+.body li.done{text-decoration:line-through;color:#6f7b85}
+.body h3{color:var(--mist);font-size:14px;margin:12px 0 2px}
+.err{color:var(--ember)}
+</style>
+</head>
+<body>
+<main>
+<h1>Serene Desk, <em>remaining</em> work</h1>
+<p class="sub"><span id="status">Loading issues…</span><button id="refresh" type="button">Refresh</button><a id="gh" href="#">Open on GitHub</a></p>
+<div class="bar" aria-hidden="true"><i id="bar" style="width:0"></i></div>
+<div id="list" aria-live="polite"></div>
+</main>
+<script>
+const REPO = "johngause/serene-desk";
+document.getElementById("gh").href = `https://github.com/${REPO}/issues`;
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
+const phase = t => { const m = t.match(/phase\s*(\d+)/i); return m ? +m[1] : 99; };
+
+// Render issue body: headings and task-list checkboxes, everything else as plain lines.
+function body(md) {
+  let out = "", inList = false;
+  for (const line of (md || "").split(/\r?\n/)) {
+    const task = line.match(/^\s*[-*]\s+\[( |x)\]\s+(.*)/i), li = line.match(/^\s*[-*]\s+(.*)/), h = line.match(/^#+\s+(.*)/);
+    if ((task || li) && !inList) { out += "<ul>"; inList = true; }
+    if (!(task || li) && inList) { out += "</ul>"; inList = false; }
+    if (task) out += `<li class="${task[1].trim() ? "done" : ""}">${esc(task[2])}</li>`;
+    else if (li) out += `<li>${esc(li[1])}</li>`;
+    else if (h) out += `<h3>${esc(h[1])}</h3>`;
+    else if (line.trim()) out += `<p>${esc(line)}</p>`;
+  }
+  return out + (inList ? "</ul>" : "");
+}
+
+async function load() {
+  const status = document.getElementById("status");
+  status.textContent = "Loading issues…";
+  try {
+    const r = await fetch(`https://api.github.com/repos/${REPO}/issues?state=all&per_page=100`, {cache: "no-store"});
+    if (!r.ok) throw new Error(`GitHub said ${r.status}${r.status === 403 ? " (rate limit, try again in a few minutes)" : ""}`);
+    const issues = (await r.json()).filter(i => !i.pull_request).sort((a, b) => phase(a.title) - phase(b.title) || a.number - b.number);
+    let tasks = 0, ticked = 0, closed = 0;
+    document.getElementById("list").innerHTML = issues.map(i => {
+      const all = (i.body || "").match(/^\s*[-*]\s+\[( |x)\]/gim) || [], done = all.filter(x => /x/i.test(x)).length;
+      const isClosed = i.state === "closed";
+      tasks += all.length || 1; ticked += isClosed ? (all.length || 1) : done; closed += isClosed;
+      const pct = isClosed ? 100 : all.length ? Math.round(done / all.length * 100) : 0;
+      const cls = isClosed ? "closed" : "open" + (done ? " started" : "");
+      return `<details class="${cls}"><summary><span class="dot"></span>
+        <span><span class="t">${esc(i.title)}</span><div class="mini"><i style="width:${pct}%"></i></div></span>
+        <span class="n">#${i.number} · ${isClosed ? "done" : all.length ? `${done}/${all.length}` : "open"}</span></summary>
+        <div class="body">${body(i.body)}<p><a href="${i.html_url}" target="_blank" rel="noopener">View #${i.number} on GitHub</a></p></div></details>`;
+    }).join("") || "<p>No issues yet.</p>";
+    document.getElementById("bar").style.width = (tasks ? Math.round(ticked / tasks * 100) : 0) + "%";
+    status.textContent = `${closed} of ${issues.length} phases done · updated ${new Date().toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})}`;
+  } catch (e) {
+    status.innerHTML = `<span class="err">Couldn't load issues: ${esc(e.message)}</span>`;
+  }
+}
+document.getElementById("refresh").onclick = load;
+load();
+setInterval(load, 120000);
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "widget": "custom",
+  "relayUrl": "https://serene-relay.<account>.workers.dev",
+  "zendeskWidgetKey": "",
+  "helpCenterUrl": "",
+  "brandName": "Serene Desk",
+  "agentName": "Wren",
+  "voiceFiller": "One moment, let me check that.",
+  "voiceSkipPatterns": ["bear with me", "one moment", "let me look"],
+  "pollFastMs": 1500,
+  "pollIdleMs": 10000,
+  "quietMs": 12000
+}

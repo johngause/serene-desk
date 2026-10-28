@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+node_modules/
+_site/
+.venv/
+__pycache__/
+tools/test-runner/runs/
+.wrangler/
+.dev.vars
+screenshots/
+handoff.md
