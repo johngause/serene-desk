@@ -10,4 +10,4 @@
   </li>
   {% endif %}{% endfor %}
 </ul>
-<dl class="totals"><div><dt>Subtotal</dt><dd class="mono">$165</dd></div></dl>
+{% if not noTotals %}<dl class="totals"><div><dt>Subtotal</dt><dd class="mono">$165</dd></div></dl>{% endif %}

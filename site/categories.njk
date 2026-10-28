@@ -11,6 +11,7 @@ eleventyComputed:
 ---
 <section class="catpage gut"><div class="wrap">
   <div class="shop-head"><h1>{{ cat.title }}</h1></div>
+  <h2 class="vh">Products</h2>
   <div class="grid">
     {% for p in products %}{% if p.category == cat.slug %}{% include "card.njk" %}{% endif %}{% endfor %}
   </div>

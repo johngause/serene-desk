@@ -29,14 +29,13 @@
     var g = ac.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
   }
+  var clickUrl = d.currentScript ? d.currentScript.src.replace(/site.js.*$/, "sounds/chain-pull.mp3") : null, clickAudio = null;
   function chainClick() {
-    if (!ctx()) return; try {
-      var t = ac.currentTime;
-      for (var i = 0; i < 5; i++) burst(t + i * 0.018, 5200 + i * 300, 4, 0.10 - i * 0.012, 0.025); // chain rattle
-      burst(t + 0.09, 3400, 1.2, 0.5, 0.03, "highpass");   // switch click
-      ping(t + 0.09, 2600, 0.18, 0.05, "square");
-      ping(t + 0.1, 1500, 0.2, 0.08, "triangle");
-      burst(t + 0.15, 4200, 3, 0.07, 0.03);                // settle
+    try {
+      if (!clickUrl) return;
+      if (!clickAudio) clickAudio = new Audio(clickUrl);
+      clickAudio.currentTime = 0;
+      var p = clickAudio.play(); if (p && p.catch) p.catch(function () {});
     } catch (e) {}
   }
   function cubeTick() {
@@ -68,16 +67,23 @@
     btn.setAttribute("role", "button"); btn.setAttribute("tabindex", "0");
     var isOn = function () { return root.getAttribute("data-lamp") !== "off"; };
     var sync = function () { btn.setAttribute("aria-pressed", String(isOn())); btn.setAttribute("aria-label", isOn() ? "Lamp is on. Pull the chain to turn it off" : "Lamp is off. Pull the chain to turn it on"); };
+    var timer = null;
     var pull = function (silent) {
       if (!silent) chainClick();
-      chain.classList.remove("pulled"); void chain.getBoundingClientRect(); if (!reduce) chain.classList.add("pulled");
-      if (isOn()) root.setAttribute("data-lamp", "off"); else root.removeAttribute("data-lamp");
-      store("sd-lamp-seen", "1"); sync();
+      chain.classList.remove("pulled"); void chain.getBoundingClientRect(); chain.classList.add("pulled");
+      // the lamp clicks at the bottom of the pull, like a real switch
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        if (isOn()) root.setAttribute("data-lamp", "off"); else root.removeAttribute("data-lamp");
+        sync();
+      }, 110);
     };
     var auto = null;
     sync();
     if (root.getAttribute("data-lamp") === "off") {
-      auto = setTimeout(function () { auto = null; pull(true); }, 700); // silent: browsers block audio before a gesture
+      // every load: let the dark room paint, then pull the chain (silent: browsers block audio before a gesture)
+      var go = function () { auto = setTimeout(function () { auto = null; pull(true); }, 700); };
+      if (d.readyState === "complete") go(); else addEventListener("load", go);
     }
     var manual = function () { if (auto) { clearTimeout(auto); auto = null; } pull(false); };
     btn.addEventListener("click", manual);
@@ -111,14 +117,7 @@
 
   var stage = d.getElementById("stage"), zoom = d.getElementById("zoom");
   if (stage) {
-    var ssvg = d.getElementById("stage-svg"), zsvg = d.getElementById("zoom-svg");
-    d.querySelectorAll(".thumb").forEach(function (t) {
-      t.addEventListener("click", function () {
-        d.querySelectorAll(".thumb").forEach(function (o) { o.removeAttribute("aria-current"); });
-        t.setAttribute("aria-current", "true");
-        ssvg.setAttribute("viewBox", t.dataset.vb); zsvg.setAttribute("viewBox", t.dataset.vb);
-      });
-    });
+    var zsvg = d.getElementById("zoom-svg");
     if (zoom && zoom.showModal) {
       stage.addEventListener("click", function () { zoom.showModal(); });
       zoom.addEventListener("click", function (e) { if (e.target === zoom || e.target === zsvg) zoom.close(); });
@@ -140,6 +139,7 @@
     };
     var q = new URLSearchParams(location.search).get("error");
     if (q && d.getElementById("err-" + q)) show(q);
+    d.querySelectorAll(".errx").forEach(function (b) { b.addEventListener("click", function () { var pc = d.getElementById("promo-code"); if (b.dataset.clear && pc) { pc.value = ""; pc.focus(); } errs.forEach(function (e) { e.classList.remove("on"); }); }); });
     var order = d.getElementById("order"), promo = d.getElementById("promo");
     if (order) order.addEventListener("submit", function (e) { e.preventDefault(); show(q && d.getElementById("err-" + q) && q !== "PROMO-04" ? q : "PAY-201"); });
     if (promo) promo.addEventListener("submit", function (e) { e.preventDefault(); show("PROMO-04"); });

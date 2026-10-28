@@ -7,15 +7,15 @@ bodyClass: home
 {% import "art.njk" as a %}
 <section class="hero gut" id="hero">
   <div class="scene-wrap grain" id="scene-wrap">
-    <svg class="scene" id="scene" viewBox="0 0 700 460" preserveAspectRatio="xMaxYMid slice" role="img" aria-label="A home office at night: an oak standing desk with a monitor, a plant, a mug and a desk lamp with a pull chain, under a shelf, beside a window onto a city street.">
+    <svg class="scene" id="scene" viewBox="0 0 730 460" preserveAspectRatio="xMaxYMid slice" role="img" aria-label="A home office at night: an oak standing desk with a monitor, a plant, a mug and a desk lamp with a pull chain, under a shelf, beside a window onto a city street.">
       <defs>
         <radialGradient id="pool" cx="520" cy="300" r="300" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F3C26B" stop-opacity=".5"/><stop offset=".45" stop-color="#F3C26B" stop-opacity=".12"/><stop offset="1" stop-color="#F3C26B" stop-opacity="0"/></radialGradient>
         <radialGradient id="poolwarm" cx="520" cy="270" r="190" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFB45A" stop-opacity=".55"/><stop offset="1" stop-color="#FFB45A" stop-opacity="0"/></radialGradient>
         <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1B222B"/><stop offset="1" stop-color="#1B222B" stop-opacity="0"/></linearGradient>
       </defs>
-      <rect width="700" height="460" fill="#232C37"/>
-      <rect x="0" y="392" width="700" height="68" fill="url(#floor)"/>
-      <rect x="0" y="388" width="700" height="5" fill="#2B3644"/>
+      <rect width="730" height="460" fill="#232C37"/>
+      <rect x="0" y="392" width="730" height="68" fill="url(#floor)"/>
+      <rect x="0" y="388" width="730" height="5" fill="#2B3644"/>
       <!-- shelf -->
       <g>
         <rect x="318" y="140" width="190" height="6" rx="1.5" fill="#C99A68"/>
@@ -41,14 +41,14 @@ bodyClass: home
       <path d="M505 205 H535 L550 243 H490 Z" fill="#C99A68"/><ellipse cx="520" cy="244" rx="30" ry="4" fill="#6B5A3E"/>
       <!-- lit: everything the lamp does. Hidden entirely when the lamp is off. -->
       <g class="lit">
-        <rect width="700" height="460" fill="url(#pool)" class="pool"/>
-        <rect width="700" height="460" fill="url(#poolwarm)" class="poolwarm"/>
+        <rect width="730" height="460" fill="url(#pool)" class="pool"/>
+        <rect width="730" height="460" fill="url(#poolwarm)" class="poolwarm"/>
         <path d="M490 244 L440 290 L600 290 L550 244 Z" fill="#F3C26B" opacity=".13"/>
         <ellipse cx="520" cy="244" rx="30" ry="4" fill="#F3C26B"/>
         <ellipse cx="520" cy="296" rx="90" ry="6" fill="#F3C26B" opacity=".18"/>
       </g>
       <!-- the room goes dark when the lamp is off -->
-      <rect class="darken" width="700" height="460" fill="#090E14"/>
+      <rect class="darken" width="730" height="460" fill="#090E14"/>
       <!-- window onto the street (outside the room, so it stays as it is) -->
       <g>
         <rect x="64" y="60" width="180" height="200" fill="#141C27"/>
@@ -116,7 +116,7 @@ bodyClass: home
     <p class="mono faces">Faces: 25 min · 50 min · 90 min</p>
     <a class="btn ghost" href="{{ '/products/hour-cube-timer/' | url }}">See the Hour Cube Timer</a>
   </div>
-  <div class="cube-stage grain">
+  <div class="cube-stage">
     <button type="button" class="cube" id="cube" data-face="1" aria-label="Hour Cube showing 50 minutes. Press to turn to the next face.">
       <span class="cube-in">
         <span class="face f25"><i>25</i><b>min</b></span>

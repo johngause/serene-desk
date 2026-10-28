@@ -4,8 +4,18 @@ permalink: /cart/
 title: Your cart
 description: Your Serene Desk cart.
 ---
-<section class="gut cartpage"><div class="wrap narrow">
+{% set noTotals = true %}
+<section class="gut cartpage"><div class="wrap">
   <h1>Your cart</h1>
-  {% include "summary.njk" %}
-  <p><a class="btn lamp" href="{{ '/checkout/' | url }}">Go to checkout</a> <a class="textlink" href="{{ '/desks/' | url }}">Keep browsing</a></p>
+  <div class="cart-grid">
+    <div>{% include "summary.njk" %}</div>
+    <aside class="cart-side" aria-labelledby="cs-h">
+      <h2 id="cs-h">Summary</h2>
+      <dl class="totals"><div><dt>Subtotal</dt><dd class="mono">$165</dd></div></dl>
+      <div class="cart-actions">
+        <a class="btn lamp" href="{{ '/checkout/' | url }}">Go to checkout</a>
+        <a class="textlink" href="{{ '/desks/' | url }}">Keep browsing</a>
+      </div>
+    </aside>
+  </div>
 </div></section>

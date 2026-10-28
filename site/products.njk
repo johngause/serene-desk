@@ -26,11 +26,6 @@ eleventyComputed:
       {% if p.sale %}<span class="sale">SALE</span>{% endif %}
       <span class="zoomhint" aria-hidden="true">Click to enlarge</span>
     </button>
-    <ul class="thumbs" aria-label="Views">
-      <li><button type="button" class="thumb" data-vb="0 0 100 100" aria-current="true" aria-label="Whole product"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#a-{{ p.art }}"/></svg></button></li>
-      <li><button type="button" class="thumb" data-vb="22 24 56 56" aria-label="Close view"><svg viewBox="22 24 56 56" aria-hidden="true"><use href="#a-{{ p.art }}"/></svg></button></li>
-      <li><button type="button" class="thumb" data-vb="-18 -6 136 126" aria-label="In the room"><svg viewBox="-18 -6 136 126" aria-hidden="true"><use href="#a-{{ p.art }}"/></svg></button></li>
-    </ul>
   </div>
 
   <dialog class="zoom" id="zoom" aria-label="{{ p.name }}, enlarged">
