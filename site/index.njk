@@ -24,11 +24,15 @@ bodyClass: home
         <rect x="446" y="122" width="18" height="18" rx="3" fill="#C99A68"/><path d="M464 127 q8 4 0 10" fill="none" stroke="#C99A68" stroke-width="3"/>
         <path d="M486 140 q-10 -6 -8 -22 q10 6 8 22 M486 140 q6 -14 18 -16 q-2 12 -18 16" fill="#7E9A87"/>
       </g>
-      <!-- desk -->
+      <!-- desk: fixed lower leg columns and feet, then everything that rides up and down -->
+      <rect x="288" y="340" width="6" height="48" fill="#3A4756"/><rect x="560" y="340" width="6" height="48" fill="#3A4756"/>
+      <g id="liftmid"><rect x="286" y="310" width="10" height="60" fill="#46515F"/><rect x="558" y="310" width="10" height="60" fill="#46515F"/></g>
+      <rect x="272" y="386" width="40" height="8" rx="4" fill="#5B6878"/><rect x="542" y="386" width="40" height="8" rx="4" fill="#5B6878"/>
+      <ellipse class="dialglow" id="floorglow" cx="520" cy="392" rx="46" ry="6" fill="#F3C26B" opacity="0"/>
+      <g id="lift">
       <rect x="262" y="290" width="330" height="12" rx="2" fill="#C99A68"/>
       <rect x="262" y="302" width="330" height="4" fill="#A97F52"/>
-      <rect x="284" y="306" width="14" height="82" fill="#5B6878"/><rect x="556" y="306" width="14" height="82" fill="#5B6878"/>
-      <rect x="272" y="386" width="40" height="8" rx="4" fill="#5B6878"/><rect x="542" y="386" width="40" height="8" rx="4" fill="#5B6878"/>
+      <rect x="284" y="306" width="14" height="38" fill="#5B6878"/><rect x="556" y="306" width="14" height="38" fill="#5B6878"/>
       <rect x="278" y="318" width="26" height="22" rx="3" fill="#46515F"/>
       <rect x="326" y="226" width="120" height="54" rx="3" fill="#121821"/><rect x="330" y="230" width="112" height="46" rx="2" fill="#2A3644"/>
       <rect x="340" y="240" width="52" height="4" rx="2" fill="#9DB4A3" opacity=".7"/><rect x="340" y="250" width="76" height="4" rx="2" fill="#9AA6B0" opacity=".5"/><rect x="340" y="260" width="42" height="4" rx="2" fill="#9AA6B0" opacity=".5"/>
@@ -47,6 +51,14 @@ bodyClass: home
         <ellipse cx="520" cy="244" rx="30" ry="4" fill="#F3C26B"/>
         <ellipse cx="520" cy="296" rx="90" ry="6" fill="#F3C26B" opacity=".18"/>
       </g>
+      <!-- the Still Dial, under the front edge of the desktop -->
+      <g id="dial" class="dial" aria-label="Desk height">
+        <rect x="502" y="304" width="36" height="36" fill="transparent"/>
+        <circle cx="520" cy="322" r="10" fill="#8F6C49" stroke="#5B3F25" stroke-width="1.2"/>
+        <path id="dialnotch" d="M520 322 V314" stroke="#2A1D10" stroke-width="2" stroke-linecap="round"/>
+        <circle id="diallight" cx="520" cy="331" r="2" fill="#F3C26B" opacity="0"/>
+      </g>
+      </g>
       <!-- the room goes dark when the lamp is off -->
       <rect class="darken" width="730" height="460" fill="#090E14"/>
       <!-- window onto the street (outside the room, so it stays as it is) -->
@@ -63,14 +75,14 @@ bodyClass: home
       </g>
       <!-- spec callouts, attached to the desk (same facts are in the strip below) -->
       <g aria-hidden="true" font-family="IBM Plex Mono, monospace" font-size="13" fill="#E3E7EA">
-        <path d="M306 329 H322" stroke="#9AA6B0" stroke-width="1.2"/><circle cx="304" cy="329" r="3" fill="#9AA6B0"/>
-        <text x="330" y="334">38 dB</text><text x="330" y="351" fill="#9AA6B0" font-size="12">quieter than a library</text>
-        <path d="M612 290 V388 M606 290 H618 M606 388 H618" stroke="#9AA6B0" stroke-width="1.2" fill="none"/>
-        <text x="624" y="335">25–51 in</text><text x="624" y="352" fill="#9AA6B0" font-size="12">height</text>
+        <g class="lift-follow"><path d="M306 329 H322" stroke="#9AA6B0" stroke-width="1.2"/><circle cx="304" cy="329" r="3" fill="#9AA6B0"/>
+        <text x="330" y="334">38 dB</text><text x="330" y="351" fill="#9AA6B0" font-size="12">quieter than a library</text></g>
+        <path id="dimline" d="M612 290 V388" stroke="#9AA6B0" stroke-width="1.2" fill="none"/><path d="M606 388 H618" stroke="#9AA6B0" stroke-width="1.2"/>
+        <g class="lift-follow"><path d="M606 290 H618" stroke="#9AA6B0" stroke-width="1.2"/><text id="dimtext" x="624" y="335">25–51 in</text><text x="624" y="352" fill="#9AA6B0" font-size="12">height</text></g>
       </g>
       <!-- chain (animated) + hit area -->
-      <g class="chain" id="chain"><path d="M502 245 V272" stroke="#9AA6B0" stroke-width="1.6" stroke-dasharray="2 2"/><circle cx="502" cy="277" r="4.5" fill="#F3C26B"/></g>
-      <g id="pullbtn" class="pullbtn" aria-label="Pull the lamp chain"><rect x="486" y="246" width="34" height="50" fill="transparent"/></g>
+      <g id="lift2"><path class="chainline" d="M502 245 V272" stroke="#9AA6B0" stroke-width="1.6" stroke-dasharray="2 2"/><g class="chain" id="chain"><circle cx="502" cy="277" r="4.5" fill="#F3C26B"/></g>
+      <g id="pullbtn" class="pullbtn" aria-label="Pull the lamp chain"><rect x="486" y="246" width="34" height="50" fill="transparent"/></g></g>
     </svg>
   </div>
   <div class="wrap">

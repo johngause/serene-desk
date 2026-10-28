@@ -81,10 +81,20 @@ html[data-lamp="off"] .scene .lit{display:none}
 html[data-lamp="off"] .scene .darken{opacity:.5}
 .pullbtn{cursor:pointer;outline:none}
 .pullbtn:focus-visible rect{stroke:var(--lamp);stroke-width:2;rx:6}
-.chain{transform-box:fill-box;transform-origin:50% 0}
+.scene .darken{pointer-events:none}
+.chain,.chainline{transform-box:fill-box;transform-origin:50% 0}
 .chain.pulled{animation:pull .3s cubic-bezier(.2,.9,.3,1.5)}
+/* the chain line stretches from the lamp socket by exactly the distance the bead drops (27px line, 18px drop) */
+.chainline.pulled{animation:stretch .3s cubic-bezier(.2,.9,.3,1.5)}
 @keyframes pull{0%{transform:translateY(0)}35%{transform:translateY(18px)}100%{transform:translateY(0)}}
-@media (prefers-reduced-motion:reduce){.chain.pulled{animation-timing-function:ease-out;animation-duration:.25s}}
+@keyframes stretch{0%{transform:scaleY(1)}35%{transform:scaleY(1.667)}100%{transform:scaleY(1)}}
+@media (prefers-reduced-motion:reduce){.chain.pulled,.chainline.pulled{animation-timing-function:ease-out;animation-duration:.25s}}
+.dial{cursor:ns-resize;outline:none;touch-action:none}
+.dial:focus-visible circle:nth-of-type(1){stroke:var(--lamp);stroke-width:2.5}
+#diallight,#floorglow{transition:opacity .35s ease-out}
+html:not([data-lamp="off"]) #floorglow.on{opacity:.22!important}
+.dial.on #diallight{opacity:1!important;filter:drop-shadow(0 0 3px #F3C26B)}
+html[data-lamp="off"] .scene #floorglow{display:none}
 
 /* facts */
 .strip{border-block:1px solid var(--line)}
