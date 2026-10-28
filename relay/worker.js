@@ -1,5 +1,6 @@
 // Serene Desk relay: holds the Zendesk Conversations API keys, exposes /session /message /messages.
 const enc = new TextEncoder();
+let sessionHits = []; // ponytail: crude per-isolate cap on POST /session; Cloudflare rate-limiting rules are the upgrade
 const hits = new Map(); // ponytail: per-isolate in-memory rate limit; use a Durable Object/KV if it must be global
 
 const json = (o, status, cors) =>
@@ -28,7 +29,7 @@ async function zd(env, method, path, body, step) {
       method, headers: { Authorization: auth, "Content-Type": "application/json" },
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (r.status === 429) { await new Promise((s) => setTimeout(s, 500 * 2 ** i)); continue; } // backoff
+    if (r.status === 429 && i < 3) { await new Promise((s) => setTimeout(s, 500 * 2 ** i)); continue; } // backoff
     if (!r.ok) throw { status: 502, error: `zendesk ${r.status}`, step };
     return r.json();
   }
@@ -39,7 +40,7 @@ async function zd(env, method, path, body, step) {
 function normalize(m) {
   const c = m.content || {};
   const role = m.author?.type === "user" ? "user" : m.source?.type === "ultimate" ? "agent" : "human";
-  const options = (c.actions || []).filter((a) => a.type === "reply")
+  const options = (Array.isArray(c.actions) ? c.actions : []).filter((a) => a?.type === "reply")
     .map((a) => ({ label: a.text, payload: a.payload ?? a.text }));
   return { id: m.id, role, text: c.text || c.altText || "", options, received: m.received };
 }
@@ -55,12 +56,16 @@ export default {
     const ip = req.headers.get("CF-Connecting-IP") || "?";
     const now = Date.now();
     const h = (hits.get(ip) || []).filter((t) => now - t < 60000);
+    if (h.length >= 150) { hits.set(ip, h); return fail(429, "rate limited", "limit", cors); } // widget polls every 1.5 s
     h.push(now); hits.set(ip, h);
-    if (h.length > 60) return fail(429, "rate limited", "limit", cors);
+    if (hits.size > 1000) for (const [k, v] of hits) if (now - v[v.length - 1] >= 60000) hits.delete(k);
 
     const { pathname, searchParams } = new URL(req.url);
     try {
       if (req.method === "POST" && pathname === "/session") {
+        sessionHits = sessionHits.filter((t) => now - t < 60000);
+        if (sessionHits.length >= 30) return fail(429, "rate limited", "limit", cors);
+        sessionHits.push(now);
         const user = (await zd(env, "POST", "/users", { externalId: "web-" + crypto.randomUUID().slice(0, 12) }, "create user")).user;
         const conv = (await zd(env, "POST", "/conversations", {
           type: "personal", participants: [{ userId: user.id }],
@@ -70,7 +75,10 @@ export default {
       }
 
       let p = {};
-      if (req.method === "POST" && pathname === "/message") p = await req.json().catch(() => ({}));
+      if (req.method === "POST" && pathname === "/message") {
+        p = await req.json().catch(() => null);
+        if (!p || typeof p !== "object" || Array.isArray(p)) return fail(400, "json object required", "validate", cors);
+      }
       else if (req.method === "GET" && pathname === "/messages") p = Object.fromEntries(searchParams);
       else return fail(404, "not found", "route", cors);
 
@@ -79,6 +87,8 @@ export default {
         return fail(401, "bad token", "auth", cors);
 
       if (pathname === "/message") {
+        if (p.payload !== undefined && (typeof p.payload !== "string" || p.payload.length > 2000))
+          return fail(400, "bad payload", "validate", cors);
         const text = p.label || p.text || p.payload;
         if (typeof text !== "string" || !text || text.length > 2000) return fail(400, "text or payload required", "validate", cors);
         // Chip taps: send the reply's label as the text, carrying the payload alongside.
@@ -92,7 +102,10 @@ export default {
       // ponytail: first page only (100 msgs); follow meta.hasMore if conversations get long
       const list = (await zd(env, "GET", `/conversations/${conversationId}/messages`, null, "list messages")).messages || [];
       const i = p.after ? list.findIndex((m) => m.id === p.after) : -1;
-      return json({ messages: list.slice(i + 1).map(normalize) }, 200, cors);
+      if (p.after && i < 0) return json({ messages: [] }, 200, cors); // unknown cursor: nothing new
+      const out = [];
+      for (const m of list.slice(i + 1)) { try { out.push(normalize(m)); } catch { /* skip malformed message */ } }
+      return json({ messages: out }, 200, cors);
     } catch (e) {
       return fail(e.status || 500, e.error || "internal error", e.step || "unknown", cors); // never log secrets
     }
