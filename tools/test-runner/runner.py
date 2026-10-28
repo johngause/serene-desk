@@ -27,6 +27,9 @@ def read_tests(path, which="all", only=None):
     if missing:
         sys.exit(f"{path}: missing columns {sorted(missing)}")
     for i, r in enumerate(rows, 2):
+        bad = [c for c in COLS if r.get(c) is None]  # short row -> DictReader gives None
+        if bad:
+            sys.exit(f"{path} line {i}: missing field(s) {sorted(bad)}")
         r["turns"] = parse_turns(r["turns"])
         if not r["id"].strip() or not r["turns"]:
             sys.exit(f"{path} line {i}: needs an id and at least one turn")
@@ -81,9 +84,27 @@ def stamp(m, t0):
 
 
 def handed_off(zd, cid, responder):
-    """Control passed on = the conversation's active responder is no longer the AI agent."""
-    conv = zd.call("GET", f"/conversations/{cid}").get("conversation", {})
-    return conv.get("activeSwitchboardIntegrationId", responder) != responder
+    """Control passed on = the active switchboard integration is no longer the AI agent.
+    Verified live: GET /conversations/{id} has `activeSwitchboardIntegration` {id,name,integrationType};
+    its id equals ZD_AI_AGENT_INTEGRATION_ID until a handoff, then becomes e.g. zd:agentWorkspace.
+    Fallback if the field is absent: any business message whose source.type isn't "ultimate"."""
+    asi = zd.call("GET", f"/conversations/{cid}").get("conversation", {}).get("activeSwitchboardIntegration")
+    if asi:
+        return asi.get("id") != responder
+    return any(m.get("author", {}).get("type") == "business" and m.get("source", {}).get("type") != "ultimate"
+               for m in list_messages(zd, cid))
+
+
+def list_messages(zd, cid):
+    """All messages, following meta.hasMore with the `after` cursor (last message id)."""
+    out, after = [], None
+    while True:
+        r = zd.call("GET", f"/conversations/{cid}/messages" + (f"?after={after}" if after else ""))
+        page = r.get("messages", [])
+        out += page
+        if not page or not r.get("meta", {}).get("hasMore"):
+            return out
+        after = page[-1]["id"]
 
 
 def run_test(zd, test, responder):
@@ -96,7 +117,7 @@ def run_test(zd, test, responder):
     # Let the AI agent's greeting land first, like a real visitor, so it isn't timed as a reply.
     while time.time() - t0 < GREETING_WAIT:
         time.sleep(POLL)
-        new = [m for m in zd.call("GET", f"/conversations/{cid}/messages").get("messages", []) if m["id"] not in seen]
+        new = [m for m in list_messages(zd, cid) if m["id"] not in seen]
         for m in new:
             seen.add(m["id"])
             msgs.append({"t": stamp(m, t0), "author": m.get("author", {}).get("type"),
@@ -110,7 +131,7 @@ def run_test(zd, test, responder):
         last_agent = None
         while time.time() - sent < MAX_WAIT:
             time.sleep(POLL)
-            for m in zd.call("GET", f"/conversations/{cid}/messages").get("messages", []):
+            for m in list_messages(zd, cid):
                 if m["id"] in seen:
                     continue
                 seen.add(m["id"])
@@ -138,6 +159,7 @@ def run_test(zd, test, responder):
 
 
 def main():
+    sys.stdout.reconfigure(errors="replace")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--csv", default="tests.csv")
     ap.add_argument("--label", default="run")
@@ -154,7 +176,7 @@ def main():
     missing = [k for k, v in cfg.items() if not v]
     if missing:
         sys.exit(f"Missing config in .env: {', '.join(missing)}")
-    tests = read_tests(a.csv, a.which, a.only.split(",") if a.only else None)
+    tests = read_tests(a.csv, a.which, [x.strip() for x in a.only.split(",") if x.strip()] if a.only else None)
     if not tests:
         sys.exit("No tests selected.")
 
@@ -174,7 +196,7 @@ def main():
 
     out = HERE / "runs"
     out.mkdir(exist_ok=True)
-    stem = out / f"{a.label}-{datetime.now():%Y%m%d-%H%M}"
+    stem = out / f"{a.label}-{datetime.now():%Y%m%d-%H%M%S}"
     lock, results = threading.Lock(), []
 
     def work(t):
@@ -186,6 +208,8 @@ def main():
                  "final_answer": "", "error": str(e)}
         with lock:
             results.append(r)
+            with open(f"{stem}.jsonl", "a", encoding="utf-8") as f:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
             print(f"  done {r['id']}: first={r['first_reply_s']}s final={r['final_reply_s']}s "
                   f"handoff={r['handoff']}" + (f" ERROR {r['error']}" if "error" in r else ""), flush=True)
 
@@ -194,9 +218,6 @@ def main():
     order = {t["id"]: i for i, t in enumerate(tests)}
     results.sort(key=lambda r: order[r["id"]])
 
-    with open(f"{stem}.jsonl", "w", encoding="utf-8") as f:
-        for r in results:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
     cols = ["id", "category", "set", "final_answer", "first_reply_s", "final_reply_s", "handoff", "conversation_id", "error"]
     with open(f"{stem}.csv", "w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, cols, extrasaction="ignore")
