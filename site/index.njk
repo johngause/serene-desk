@@ -28,7 +28,6 @@ bodyClass: home
       <rect x="288" y="340" width="6" height="48" fill="#3A4756"/><rect x="560" y="340" width="6" height="48" fill="#3A4756"/>
       <g id="liftmid"><rect x="286" y="310" width="10" height="60" fill="#46515F"/><rect x="558" y="310" width="10" height="60" fill="#46515F"/></g>
       <rect x="272" y="386" width="40" height="8" rx="4" fill="#5B6878"/><rect x="542" y="386" width="40" height="8" rx="4" fill="#5B6878"/>
-      <ellipse class="dialglow" id="floorglow" cx="520" cy="392" rx="46" ry="6" fill="#F3C26B" opacity="0"/>
       <g id="lift">
       <rect x="262" y="290" width="330" height="12" rx="2" fill="#C99A68"/>
       <rect x="262" y="302" width="330" height="4" fill="#A97F52"/>
@@ -53,10 +52,10 @@ bodyClass: home
       </g>
       <!-- the Still Dial, under the front edge of the desktop -->
       <g id="dial" class="dial" aria-label="Desk height">
-        <rect x="502" y="304" width="36" height="36" fill="transparent"/>
-        <circle cx="520" cy="322" r="10" fill="#8F6C49" stroke="#5B3F25" stroke-width="1.2"/>
+        <rect x="514" y="306" width="12" height="6" fill="#3A4756"/><rect x="509" y="306" width="22" height="3" rx="1" fill="#2B3540"/>
+        <circle cx="520" cy="322" r="11" fill="#8F6C49" stroke="#5B3F25" stroke-width="1.2"/>
         <path id="dialnotch" d="M520 322 V314" stroke="#2A1D10" stroke-width="2" stroke-linecap="round"/>
-        <circle id="diallight" cx="520" cy="331" r="2" fill="#F3C26B" opacity="0"/>
+        <circle id="diallight" cx="520" cy="333.5" r="2" fill="#F3C26B" opacity="0"/>
       </g>
       </g>
       <!-- the room goes dark when the lamp is off -->
@@ -84,6 +83,10 @@ bodyClass: home
       <g id="lift2"><path class="chainline" d="M502 245 V272" stroke="#9AA6B0" stroke-width="1.6" stroke-dasharray="2 2"/><g class="chain" id="chain"><circle cx="502" cy="277" r="4.5" fill="#F3C26B"/></g>
       <g id="pullbtn" class="pullbtn" aria-label="Pull the lamp chain"><rect x="486" y="246" width="34" height="50" fill="transparent"/></g></g>
     </svg>
+    <div class="deskbtns" role="group" aria-label="Desk height" hidden>
+      <button type="button" class="dbtn" id="deskup" aria-label="Raise desk"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 11.5 9 6.5l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" class="dbtn" id="deskdn" aria-label="Lower desk"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 6.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
   </div>
   <div class="wrap">
     <div class="hero-copy">

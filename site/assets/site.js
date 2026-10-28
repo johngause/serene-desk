@@ -108,7 +108,7 @@
   if (lift && dial) {
     var MIN = 25, MAX = 51, H0 = 40, K = 2.45; // H0 = the static drawing; K = scene px per inch
     var follow = [lift, d.getElementById("lift2")].concat([].slice.call(d.querySelectorAll(".lift-follow")));
-    var mid = d.getElementById("liftmid"), dimline = d.getElementById("dimline"), dimtext = d.getElementById("dimtext"), notch = d.getElementById("dialnotch"), glow = d.getElementById("floorglow");
+    var mid = d.getElementById("liftmid"), dimline = d.getElementById("dimline"), dimtext = d.getElementById("dimtext"), notch = d.getElementById("dialnotch");
     var touched = false, cur = H0, target = H0, raf = 0, fade = null, hum = null;
     var clamp = function (v) { return Math.max(MIN, Math.min(MAX, v)); };
     var paint = function () {
@@ -122,8 +122,8 @@
     };
     var ease = function (t) { return t * t * (3 - 2 * t); }; // smoothstep: slow start, slow stop
     var light = function () {
-      dial.classList.add("on"); glow.classList.add("on");
-      clearTimeout(fade); fade = setTimeout(function () { dial.classList.remove("on"); glow.classList.remove("on"); }, 10000); // 10 s after the last input
+      dial.classList.add("on");
+      clearTimeout(fade); fade = setTimeout(function () { dial.classList.remove("on"); }, 10000); // 10 s after the last input
     };
     var humStop = function () {
       if (!hum) return; var h = hum, t = h.c.currentTime; hum = null;
@@ -165,18 +165,33 @@
       if (e.key === "Home") by = MIN - target; if (e.key === "End") by = MAX - target;
       if (by === undefined) return; e.preventDefault(); move(target + by);
     });
-    var drag = null;
-    dial.addEventListener("pointerdown", function (e) { drag = { y: e.clientY, h: target, moved: false }; dial.setPointerCapture(e.pointerId); dial.focus({ preventScroll: true }); });
-    dial.addEventListener("pointermove", function (e) {
-      if (!drag) return; var dy = drag.y - e.clientY;
-      if (Math.abs(dy) > 3) drag.moved = true;
-      if (drag.moved) { var px = dial.ownerSVGElement.getBoundingClientRect().height / 460; move(drag.h + dy / (K * px), 160); }
-    });
-    var up = function (e) { // a click without drag: top half raises 2 in, bottom half lowers 2 in
-      if (drag && !drag.moved) { var r = dial.getBoundingClientRect(); move(target + (e.clientY < r.top + r.height / 2 ? 2 : -2)); }
-      drag = null;
-    };
-    dial.addEventListener("pointerup", up); dial.addEventListener("pointercancel", function () { drag = null; });
+    // up/down buttons: hold to keep moving (speed eases in and out); a quick tap or key press nudges 2 in
+    var btns = d.querySelector(".deskbtns");
+    if (btns) {
+      btns.hidden = false;
+      var dir = 0, vel = 0, last = 0, held = 0, loop = 0, MAXV = 9; // MAXV in inches per second
+      var tick = function (now) {
+        var dt = Math.min(0.05, (now - last) / 1000); last = now;
+        vel += (dir * MAXV - vel) * (1 - Math.exp(-dt / (dir ? 0.35 : 0.2))); // soft start / soft stop
+        cur = clamp(cur + vel * dt); if (cur === MIN || cur === MAX) vel = 0; target = cur; paint();
+        if (dir || Math.abs(vel) > 0.05) loop = requestAnimationFrame(tick); else { loop = 0; humStop(); }
+      };
+      var hold = function (d_) {
+        if (reduce) { move(target + d_ * 2); return; }
+        touched = true; cancelAnimationFrame(raf); raf = 0; dir = d_; held = performance.now(); light(); humStart();
+        if (!loop) { last = held; vel = 0; loop = requestAnimationFrame(tick); }
+      };
+      var release = function () {
+        if (!dir) return; var d_ = dir; dir = 0;
+        if (performance.now() - held < 220) { cancelAnimationFrame(loop); loop = 0; vel = 0; humStop(); move(cur + d_ * 2); }
+      };
+      [["deskup", 1], ["deskdn", -1]].forEach(function (x) {
+        var b = d.getElementById(x[0]);
+        b.addEventListener("pointerdown", function (e) { if (e.button) return; b.setPointerCapture(e.pointerId); hold(x[1]); });
+        b.addEventListener("pointerup", release); b.addEventListener("pointercancel", release); b.addEventListener("lostpointercapture", release);
+        b.addEventListener("click", function (e) { if (e.detail === 0) move(target + x[1] * 2); }); // keyboard
+      });
+    }
   }
 
   /* ---- Hour Cube ---- */
@@ -219,6 +234,64 @@
     sb.classList.add("hide");
   }
 
+  /* ---- cart: sessionStorage state; absent/empty = the demo preset that the HTML already shows ---- */
+  var CK = "sd-cart";
+  var readCart = function () { try { var c = JSON.parse(sessionStorage.getItem(CK)); return Array.isArray(c) ? c : null; } catch (e) { return null; } };
+  var saveCart = function (c) { try { c ? sessionStorage.setItem(CK, JSON.stringify(c)) : sessionStorage.removeItem(CK); } catch (e) {} };
+  var badge = d.querySelector(".badge"), setBadge = function (c) { // header count follows the cart; default stays as rendered
+    if (badge && c) badge.firstChild.nodeValue = c.reduce(function (n, l) { return n + l.qty; }, 0);
+  };
+  setBadge(readCart());
+  var lines = d.getElementById("lines"), catEl = d.getElementById("catalog");
+  var onCartChange = function () {};
+  var optForm = d.querySelector("form.opts[data-id]");
+  if (optForm) optForm.addEventListener("submit", function (e) { // product page: add to the same cart, then show it
+    var cart = readCart() || presetCart(), id = optForm.dataset.id, w = d.querySelector('input[name="width"]:checked');
+    var l = cart.filter(function (x) { return x.id === id && x.sku === (sku ? sku.textContent : undefined); })[0];
+    if (l) l.qty++; else cart.push({ id: id, qty: 1, sku: sku ? sku.textContent : undefined, price: w ? +w.dataset.price : undefined });
+    saveCart(cart);
+  });
+  function presetCart() { // read from the server-rendered preset when available, else the known preset ids
+    return [{ id: "SD-ACC-MAT", qty: 1 }, { id: "SD-LGT-LNT", qty: 1 }];
+  }
+  if (lines && catEl) {
+    var cat = JSON.parse(catEl.textContent), money = function (n) { return "$" + n; };
+    var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+    var siteBase = lines.querySelector("a") ? lines.querySelector("a").getAttribute("href").replace(/products\/[^/]+\/$/, "") : "/";
+    var rest = d.getElementById("restore"), skus = {};
+    lines.querySelectorAll("li[data-id]").forEach(function (li) { skus[li.dataset.id] = li.querySelector(".sku").textContent.replace(/ · Qty \d+$/, ""); });
+    var draw = function () {
+      var cart = readCart(), total = 0;
+      if (!cart) { cart = presetCart(); }
+      lines.innerHTML = cart.map(function (l, i) {
+        var p = cat[l.id]; if (!p) return "";
+        var unit = l.price != null ? l.price : (p.sale || p.price), sale = l.price == null && p.sale; total += unit * l.qty;
+        var sk = l.sku || skus[l.id] || l.id;
+        return '<li class="line" data-i="' + i + '" data-id="' + esc(l.id) + '" data-qty="' + l.qty + '" data-price="' + unit + '">' +
+          '<div class="lineart grain"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><use href="#a-' + esc(p.art) + '"/></svg></div>' +
+          '<div><p class="name"><a href="' + esc(siteBase) + 'products/' + esc(p.slug) + '/">' + esc(p.name) + '</a></p>' +
+          '<p class="sku mono">' + esc(sk) + ' · Qty ' + l.qty + '</p>' + (sale ? '<p class="saletag mono">Sale price</p>' : '') +
+          '<div class="qty"><button type="button" data-d="-1" aria-label="Decrease quantity of ' + esc(p.name) + '"' + (l.qty < 2 ? " disabled" : "") + '>−</button><output aria-live="polite">' + l.qty + '</output><button type="button" data-d="1" aria-label="Increase quantity of ' + esc(p.name) + '">+</button>' +
+          '<button type="button" class="rm" data-rm="1" aria-label="Remove ' + esc(p.name) + '">Remove</button></div></div>' +
+          '<p class="price' + (sale ? ' on' : '') + '">' + money(unit * l.qty) + (sale ? '<s><span class="vh">was </span>' + money(p.price * l.qty) + '</s>' : '') + '</p></li>';
+      }).join("");
+      setBadge(cart);
+      d.querySelectorAll(".subtotal").forEach(function (e) { e.textContent = money(total); });
+      if (rest) rest.hidden = false;
+    };
+    // the prices on the page are read from the catalog (built from products.json), never typed here
+    var mutate = function (fn) { var c = readCart() || presetCart(); fn(c); saveCart(c); draw(); onCartChange(); };
+    lines.addEventListener("click", function (e) {
+      var b = e.target.closest("button"), li = e.target.closest("li"); if (!b || !li) return;
+      var i = +li.dataset.i;
+      mutate(function (c) { if (b.dataset.rm) c.splice(i, 1); else c[i].qty = Math.max(1, c[i].qty + +b.dataset.d); });
+      var again = lines.querySelector('li[data-i="' + Math.min(i, lines.children.length - 1) + '"] ' + (b.dataset.rm ? "" : 'button[data-d="' + b.dataset.d + '"]'));
+      if (again) again.focus(); else if (rest) rest.focus();
+    });
+    if (rest) rest.addEventListener("click", function () { var pc = d.getElementById("promo-code"); if (pc) pc.value = "SERENE10"; saveCart(null); draw(); onCartChange(); });
+    if (readCart()) draw(); else if (rest) { rest.hidden = false; draw(); }
+  }
+
   /* ---- checkout: deterministic fake errors ---- */
   var errs = d.querySelectorAll(".errbox");
   if (errs.length) {
@@ -226,7 +299,11 @@
       errs.forEach(function (e) { e.classList.toggle("on", e.id === "err-" + code); });
       var t = d.getElementById("err-" + code); if (t) t.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
     };
-    var q = new URLSearchParams(location.search).get("error");
+    var q = new URLSearchParams(location.search).get("error"), q0 = function () { return q; };
+    var clearErrs = function () { errs.forEach(function (e) { e.classList.remove("on"); }); };
+    onCartChange = clearErrs; // changing the cart clears any error
+    // errors never persist: drop a stale #err- hash (it would re-show the box on reload) unless ?error= asks for one
+    if (/^#err-/.test(location.hash) && !q0()) try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     if (q && d.getElementById("err-" + q)) show(q);
     d.querySelectorAll(".errx").forEach(function (b) { b.addEventListener("click", function () { var pc = d.getElementById("promo-code"); if (b.dataset.clear && pc) { pc.value = ""; pc.focus(); } errs.forEach(function (e) { e.classList.remove("on"); }); }); });
     var order = d.getElementById("order"), promo = d.getElementById("promo");
