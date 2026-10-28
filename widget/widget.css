@@ -35,3 +35,4 @@
 .sw-send{border:0;border-radius:999px;background:var(--lamp);color:var(--dusk);font:600 14px var(--body);padding:9px 16px;cursor:pointer}
 .sw-send:disabled{opacity:.5;cursor:default}
 @media (prefers-reduced-motion:reduce){.sw-typing i{animation:none;opacity:.7}}
+.sw-m ul{margin:6px 0;padding-left:18px;list-style:disc}.sw-m li+li{margin-top:4px}

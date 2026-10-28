@@ -33,11 +33,23 @@
     }
     parent.appendChild(document.createTextNode(s.slice(last)));
   }
+  function bold(parent, s) { // **bold** as <strong>, rest autolinked; text nodes only
+    s.split(/(\*\*[^*]+\*\*)/).forEach(function (t, i) {
+      if (i % 2) parent.appendChild(h("strong", "", t.slice(2, -2))); else inline(parent, t);
+    });
+  }
   function body(box, text) {
+    var ul = null;
     text.split(/\n+/).forEach(function (line) {
       if (!line.trim()) return;
+      var li = /^\s*[*-]\s+(.*)$/.exec(line);
+      if (li) {
+        if (!ul) { ul = h("ul", "sw-ul"); box.appendChild(ul); }
+        bold(ul.appendChild(h("li")), li[1].trim()); return;
+      }
+      ul = null;
       var p = h("p", /^\W*sources?\b/i.test(line) ? "sw-src" : "");
-      inline(p, line.trim());
+      bold(p, line.trim());
       box.appendChild(p);
     });
   }
@@ -100,7 +112,8 @@
     var box = h("div", "sw-m " + (m.role === "user" ? "sw-me" : "sw-bot"));
     if (m.role === "human") box.appendChild(h("span", "sw-who", "Serene Desk team"));
     var cites = (m.citations || []).filter(function (c) { return c && /^https?:\/\//i.test(c.url); });
-    var txt = m.text || "", at = cites.length ? txt.search(/\n\s*Sources?:/i) : -1;
+    var txt = m.text || "", at = -1;
+    if (cites.length) txt.replace(/\n[ \t]*Sources?:[ \t]*(?=\n)/gi, function (x, i) { at = i; return x; }); // last heading: the relay validated the block after it
     body(box, at >= 0 ? txt.slice(0, at) : txt); // the relay lifted the "Sources:" block into citations
     if (cites.length) {
       var src = h("p", "sw-src", "Sources: ");
