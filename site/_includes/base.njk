@@ -17,6 +17,8 @@ try{if(localStorage.getItem("sd-ann-closed"))h.classList.add("ann-closed")}catch
 {% if bodyClass == "home" %}h.setAttribute("data-lamp","off");{% endif %}})();
 </script>
 <link rel="stylesheet" href="{{ '/assets/site.css' | url }}">
+<link rel="stylesheet" href="{{ '/assets/shop.css' | url }}">
+<link rel="stylesheet" href="{{ '/assets/content.css' | url }}">
 </head>
 <body class="{{ bodyClass }}">
 <a class="skip" href="#main">Skip to content</a>
@@ -25,10 +27,10 @@ try{if(localStorage.getItem("sd-ann-closed"))h.classList.add("ann-closed")}catch
 <header class="nav gut" id="nav"><div class="wrap">
   <a class="brand" href="{{ '/' | url }}"><svg width="30" height="30" aria-hidden="true"><use href="#mark"/></svg>Serene Desk</a>
   <nav aria-label="Main"><ul class="links">
-    <li><a href="{{ '/desks/' | url }}">Desks</a></li>
-    <li><a href="{{ '/lighting/' | url }}">Lighting</a></li>
-    <li><a href="{{ '/accessories/' | url }}">Accessories</a></li>
-    <li><a href="{{ '/help/' | url }}">Help</a></li>
+    <li><a href="{{ '/desks/' | url }}"{% if page.url == '/desks/' %} aria-current="page"{% endif %}>Desks</a></li>
+    <li><a href="{{ '/lighting/' | url }}"{% if page.url == '/lighting/' %} aria-current="page"{% endif %}>Lighting</a></li>
+    <li><a href="{{ '/accessories/' | url }}"{% if page.url == '/accessories/' %} aria-current="page"{% endif %}>Accessories</a></li>
+    <li><a href="{{ '/help/' | url }}"{% if page.url == '/help/' %} aria-current="page"{% endif %}>Help</a></li>
   </ul></nav>
   <a class="cartbtn" href="{{ '/cart/' | url }}"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg><span>Cart</span><b class="badge">2<span class="vh"> items</span></b></a>
 </div></header>
@@ -39,7 +41,7 @@ try{if(localStorage.getItem("sd-ann-closed"))h.classList.add("ann-closed")}catch
 
 <footer class="foot gut"><div class="wrap">
   <p>Serene Desk is a fictional brand created for a product demo.</p>
-  <nav aria-label="Footer"><ul class="mono">
+  <nav aria-label="Footer"><ul>
     <li><a href="{{ '/shipping/' | url }}">Shipping</a></li>
     <li><a href="{{ '/returns/' | url }}">Returns</a></li>
     <li><a href="{{ '/trial/' | url }}">Trial</a></li>

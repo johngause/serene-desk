@@ -119,6 +119,8 @@
       dimline.setAttribute("d", "M612 " + (290 + dy).toFixed(2) + " V388");
       notch.setAttribute("transform", "rotate(" + ((cur - H0) * 18).toFixed(1) + " 520 322)");
       var n = Math.round(cur); if (dimtext) dimtext.textContent = n + " in";
+      var bu = d.getElementById("deskup"), bd = d.getElementById("deskdn");
+      if (bu) { bu.setAttribute("aria-disabled", cur >= MAX - 0.05); bd.setAttribute("aria-disabled", cur <= MIN + 0.05); }
       dial.setAttribute("aria-valuenow", n); dial.setAttribute("aria-valuetext", "Desk height " + n + " in");
     };
     var ease = function (t) { return t * t * (3 - 2 * t); }; // smoothstep: slow start, slow stop
