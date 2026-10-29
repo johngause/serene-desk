@@ -2,7 +2,7 @@
    Voice later: add a mic button in buildUI(), call send({text}) with the transcript, and
    fill in onAgentMessage(m) (called once per new non-user message) to speak it. */
 (function () {
-  var C = window.SereneWidget || {};
+  var C = window.SereneWidget || {}; if (!(C.typingGraceMs >= 0)) C.typingGraceMs = 8000;
   if (!C.relayUrl) return;
   var KEY = "sd-chat", S = null, seen = {}, lastId = null;
   // a reload starts a fresh conversation (next open calls POST /session); links and the logo keep it
@@ -18,7 +18,7 @@
   var pend = "", pendItm = "", pauseT = null, fillerT = null, restartT = null, fails = 0, recent = "", endAt = 0, awaiting = false, voices = [], voiceName = "", VKEY = "sd-voice", MKEY = "sd-vmode", vmode = "natural";
   // half-duplex: no recognition while Wren speaks (+ TAIL after).
   var TAIL = 600, muted = false, TABK = "sd-tab";
-  var echoT = null, echoFor = "", held = [], hush = false, awaitEcho = false, thinking = false, quiet = false, polled = false;
+  var echoT = null, echoFor = "", held = [], hush = false, awaitEcho = false, thinking = false, quiet = false, polled = false, graceT = null, quietFor = 0;
   try { voiceName = localStorage.getItem(VKEY) || ""; vmode = localStorage.getItem(MKEY) === "browser" ? "browser" : "natural"; } catch (e) {}
   function lab() { return speaking ? (C.agentName || "Wren") + " is speaking" : thinking ? "Thinking" : muted ? (C.agentName || "Wren") + " can't hear you" : "Listening"; }
   function status(t) {
@@ -29,7 +29,7 @@
   }
   function blocked() { return (speaking || queue.length > 0 || Date.now() - endAt < TAIL); }
   function interrupt() { // stops everything; later agent/human messages stay visible but are not spoken until the next send
-    hush = true; thinking = false; awaiting = false; clearTimeout(fillerT);
+    hush = true; thinking = false; clearTimeout(graceT); graceT = null; awaiting = false; clearTimeout(fillerT);
     stopSpeech(); endAt = 0; startRec();
   }
 
@@ -341,13 +341,23 @@
     var low = (m.text || "").toLowerCase();
     return (C.voiceSkipPatterns || []).some(function (p) { return p && low.indexOf(String(p).toLowerCase()) >= 0; });
   }
+  function isFinal(m) { // no 'more coming' signal from the API, so guess: citations, a question, chips or a human mean the turn is over
+    var t = (m.text || "").replace(/[\s\p{Extended_Pictographic}️‍]+$/u, "");
+    return m.role === "human" || !!(m.citations && m.citations.length) || !!(m.options && m.options.length) || t.slice(-1) === "?";
+  }
+  function endGrace() { // grace window over (or reset): dots and the voice "Thinking" label go away
+    clearTimeout(graceT); graceT = null;
+    if (!waiting && !thinking) return;
+    waiting = false; if (el.typing) el.typing.hidden = true;
+    if (thinking) { thinking = false; status(lab()); }
+  }
   function onAgentMessage(m) {
     if (!voiceOn) return;
     awaiting = false; clearTimeout(fillerT);
     if (hush || quiet) return; // interrupted, or already there when voice came on
     if (awaitEcho) { held.push(m); return; } // before the echo of the latest send: stale if the echo shows up, spoken if the safety timer fires
     if (isStall(m)) { status(lab()); return; }
-    thinking = false; var t = speechText(m); if (t) speakText(t, m.id); else status(lab());
+    thinking = !isFinal(m); var t = speechText(m); if (t) speakText(t, m.id); else status(lab());
   }
 
   function clearEcho(speakHeld) { // one timer; held messages are stale once the echo arrives, newer if the timer fires
@@ -588,7 +598,7 @@
   }
 
   function fail(e, again) {
-    waiting = false; el.typing.hidden = true;
+    clearTimeout(graceT); graceT = null; waiting = false; el.typing.hidden = true;
     if (e.status === 401 && !retried) { // stale session: start fresh once
       retried = true; S = null; seen = {}; lastId = null; el.log.textContent = "";
       try { sessionStorage.removeItem(KEY); } catch (x) {}
@@ -601,7 +611,7 @@
   function send(p) {
     if (busy) return;
     if (voiceOn) ensureAudio();
-    busy = true; el.send.disabled = true; waiting = true;
+    busy = true; el.send.disabled = true; waiting = true; clearTimeout(graceT); graceT = null;
     hush = false; awaitEcho = true; held = []; echoFor = (p.label || p.text || "").trim(); clearTimeout(echoT); // replies after this message are spoken; anything polled before its echo is older
     if (voiceOn) { if (speaking || queue.length) stopSpeech(); thinking = true; status(lab()); }
     var tmp = addMsg({ role: "user", text: p.label || p.text, pending: true });
@@ -622,7 +632,7 @@
 
   /* ---- polling ---- */
   function startFast() {
-    fastStart = lastNew = Date.now(); fast = true;
+    fastStart = lastNew = Date.now(); fast = true; quietFor = C.quietMs;
     el.typing.hidden = !waiting; scroll(); schedule();
   }
   function schedule() {
@@ -643,13 +653,18 @@
           var o = el.log.querySelector('.sw-me[data-opt="1"]');
           if (awaitEcho && (m.text || "").trim() === echoFor) clearEcho(false);
           if (o) { delete o.dataset.opt; return; }
-        } else { got++; if (!isStall(m)) waiting = false; }
+        } else {
+          got++;
+          if (isStall(m)) { clearTimeout(graceT); graceT = null; }
+          else if (isFinal(m)) { clearTimeout(graceT); graceT = null; waiting = false; quietFor = C.quietMs; }
+          else { waiting = true; quietFor = Math.max(C.quietMs, C.typingGraceMs); clearTimeout(graceT); graceT = setTimeout(endGrace, C.typingGraceMs); }
+        }
         addMsg(m);
         if (m.role !== "user") onAgentMessage(m);
       });
       var n = Date.now();
       if (got) { lastNew = n; el.typing.hidden = !waiting; note(""); }
-      if (fast && (n - lastNew > C.quietMs || n - fastStart > 90000)) { fast = false; waiting = false; el.typing.hidden = true; }
+      if (fast && (n - lastNew > (quietFor || C.quietMs) || n - fastStart > 90000)) { fast = false; endGrace(); waiting = false; el.typing.hidden = true; }
       schedule();
     }).catch(function (e) {
       if (initial || e.status === 401) return fail(e, function () { return poll(true); });
@@ -670,7 +685,7 @@
   }
   function closePanel() {
     if (voiceOn) voiceOff();
-    open = false; waiting = false; el.typing.hidden = true; clearTimeout(timer); el.panel.inert = true;
+    open = false; clearTimeout(graceT); graceT = null; waiting = false; el.typing.hidden = true; clearTimeout(timer); el.panel.inert = true;
     el.launch.hidden = false; el.launch.focus();
     if (matchMedia("(prefers-reduced-motion:reduce)").matches) { el.panel.hidden = true; return; }
     el.panel.classList.add("sw-out");
