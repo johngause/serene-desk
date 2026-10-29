@@ -15,13 +15,13 @@ description: Checkout for your Serene Desk order.
       </div>
 
       <fieldset><legend>Contact</legend>
-        <label class="fld">Email<input type="email" name="email" autocomplete="email"></label>
+        <label class="fld" for="co-email">Email<input id="co-email" type="email" name="email" autocomplete="section-shipping email"></label>
       </fieldset>
       <fieldset><legend>Delivery address</legend>
-        <label class="fld">Full name<input type="text" name="name" autocomplete="name"></label>
-        <label class="fld">Street address<input type="text" name="street" autocomplete="address-line1"></label>
-        <div class="two"><label class="fld">City<input type="text" name="city" autocomplete="address-level2"></label>
-        <label class="fld">Postal code<input type="text" name="zip" autocomplete="postal-code"></label></div>
+        <label class="fld" for="co-name">Full name<input id="co-name" type="text" name="name" autocomplete="section-shipping shipping name"></label>
+        <label class="fld" for="co-street">Street address<input id="co-street" type="text" name="address1" autocomplete="section-shipping shipping address-line1"></label>
+        <div class="two"><label class="fld" for="co-city">City<input id="co-city" type="text" name="city" autocomplete="section-shipping shipping address-level2"></label>
+        <label class="fld" for="co-zip">Postal code<input id="co-zip" type="text" name="postal_code" autocomplete="section-shipping shipping postal-code"></label></div>
       </fieldset>
       <fieldset><legend>Payment</legend>
         <p class="paydisp"><span class="mono">•••• 4242</span> <span>Saved card on file</span></p>
