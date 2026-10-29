@@ -277,7 +277,7 @@
     var siteBase = lines.querySelector("a") ? lines.querySelector("a").getAttribute("href").replace(/products\/[^/]+\/$/, "") : "/";
     var rest = d.getElementById("restore"), skus = {};
     lines.querySelectorAll("li[data-id]").forEach(function (li) { skus[li.dataset.id] = li.querySelector(".sku").textContent.replace(/ · Qty \d+$/, ""); });
-    var promoOn = false, promoDropped = false; // SERENE10 applied (memory only); dropped = a sale item arrived after it
+    var lastTotal = 0, promoOn = false, promoDropped = false; // SERENE10 applied (memory only); dropped = a sale item arrived after it
     var draw = function () {
       var cart = readCart(), total = 0;
       if (!cart) { cart = presetCart(); }
@@ -303,6 +303,7 @@
       setBadge(cart);
       d.querySelectorAll(".subtotal").forEach(function (e) { e.textContent = money(total); });
       if (promoOn && cart.some(function (l) { return cat[l.id] && cat[l.id].sale; })) { promoOn = false; promoDropped = true; }
+      lastTotal = promoOn ? Math.round(total * 90) / 100 : total;
       d.querySelectorAll(".totals .promo-rows").forEach(function (e) { e.remove(); });
       if (promoOn) { // 10% off; cents shown only when needed
         var off = Math.round(total * 10) / 100, tt = d.querySelector(".co-sum .totals");
@@ -320,6 +321,20 @@
       var again = lines.querySelector('li[data-i="' + Math.min(i, lines.children.length - 1) + '"] ' + (b.dataset.rm ? "" : 'button[data-d="' + b.dataset.d + '"]'));
       if (again) again.focus(); else if (rest) rest.focus();
     });
+    var flash = function () { // brief highlight of the totals after a Wren site action
+      if (!reduce) d.querySelectorAll(".totals").forEach(function (e) { e.animate([{ backgroundColor: "rgba(232,184,96,.35)" }, { backgroundColor: "transparent" }], { duration: 1400, easing: "ease-out" }); });
+    };
+    /* Wren site actions (widget): same functions as the Remove / Apply buttons. Only exists where the cart is drawn. */
+    window.SereneCart = {
+      flash: flash,
+      items: function () { return (readCart() || presetCart()).filter(function (l) { return cat[l.id]; }).map(function (l) { return { id: l.id, name: cat[l.id].name, sale: !!cat[l.id].sale }; }); },
+      total: function () { return lastTotal; },
+      remove: function (id) {
+        var c = readCart() || presetCart(), i = c.map(function (l) { return l.id; }).indexOf(id); if (i < 0) return false;
+        mutate(function (c2) { c2.splice(i, 1); }); flash(); return true;
+      },
+      applyPromo: null // set on checkout, where the promo box exists
+    };
     if (rest) rest.addEventListener("click", function () { var pc = d.getElementById("promo-code"); if (pc) pc.value = "SERENE10"; promoOn = false; saveCart(null); draw(); onCartChange(); });
     if (readCart()) draw(); else if (rest) { rest.hidden = false; draw(); }
   }
@@ -344,7 +359,9 @@
       var code = (given != null ? given : d.getElementById("promo-code").value || "").trim().toUpperCase(), cart = readCart() || presetCart();
       promoOn = code === "SERENE10" && cart.length > 0 && !cart.some(function (l) { return cat[l.id] && cat[l.id].sale; });
       draw(); if (promoOn) clearErrs(); else show("PROMO-04");
+      return promoOn;
     };
+    if (promo && window.SereneCart) window.SereneCart.applyPromo = function () { var ok = applyPromo(); if (ok) window.SereneCart.flash(); return ok; };
     if (order) order.addEventListener("submit", function (e) {
       e.preventDefault();
       var cart0 = readCart() || presetCart(); if (!cart0.length) return; // empty cart: nothing to order

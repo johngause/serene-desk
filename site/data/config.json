@@ -7,6 +7,7 @@
   "agentName": "Wren",
   "stallPatterns": ["bear with me", "one moment", "let me look", "please remain patient", "please bear with me", "allow me a moment"],
   "voiceSkipPatterns": ["rate your experience"],
+  "siteActions": true,
   "pollFastMs": 1500,
   "pollIdleMs": 10000,
   "quietMs": 12000,
