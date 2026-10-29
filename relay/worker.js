@@ -1,6 +1,8 @@
 // Serene Desk relay: holds the Zendesk Conversations API keys, exposes /session /message /messages.
 const enc = new TextEncoder();
 let sessionHits = []; // ponytail: crude per-isolate cap on POST /session; Cloudflare rate-limiting rules are the upgrade
+const ttsHits = new Map(); // ponytail: per-isolate per-conversation /tts cap
+const FILLER = "One moment, let me check that."; // keep equal to site/data/config.json voiceFiller
 const hits = new Map(); // ponytail: per-isolate in-memory rate limit; use a Durable Object/KV if it must be global
 
 const json = (o, status, cors) =>
@@ -36,22 +38,27 @@ async function zd(env, method, path, body, step) {
   throw { status: 503, error: "zendesk rate limited", step };
 }
 
+// The AI agent ends answers with a trailing "Sources:" block of lines like " * Title [https://url]".
+function splitSources(t) {
+  const citations = [];
+  let at = -1;
+  for (const k of t.matchAll(/\n[ \t]*Sources?:[ \t]*(?=\n)/gi)) at = k.index; // last heading
+  if (at >= 0) {
+    const ls = t.slice(at + 1).split("\n").slice(1).filter((l) => l.trim());
+    const xs = ls.map((l) => /^\W*(.+?)\s*\[(https?:\/\/[^\]\s]+)\]\s*$/.exec(l));
+    if (ls.length && xs.every(Boolean)) { for (const x of xs) citations.push({ title: x[1], url: x[2] }); return { body: t.slice(0, at), citations }; }
+  }
+  return { body: t, citations };
+}
+
 // AI agent = business author whose source.type is "ultimate"; any other business author is a human.
 function normalize(m) {
   const c = m.content || {};
   const role = m.author?.type === "user" ? "user" : m.source?.type === "ultimate" ? "agent" : "human";
   const options = (Array.isArray(c.actions) ? c.actions : []).filter((a) => a?.type === "reply")
     .map((a) => ({ label: a.text, payload: a.payload ?? a.text }));
-  // The AI agent ends answers with a trailing "Sources:" block of lines like " * Title [https://url]".
-  const citations = [];
   const t = typeof c.text === "string" ? c.text : "";
-  let at = -1;
-  for (const k of t.matchAll(/\n[ \t]*Sources?:[ \t]*(?=\n)/gi)) at = k.index; // last heading
-  if (at >= 0) {
-    const ls = t.slice(at + 1).split("\n").slice(1).filter((l) => l.trim());
-    const xs = ls.map((l) => /^\W*(.+?)\s*\[(https?:\/\/[^\]\s]+)\]\s*$/.exec(l));
-    if (ls.length && xs.every(Boolean)) for (const x of xs) citations.push({ title: x[1], url: x[2] });
-  }
+  const { citations } = splitSources(t);
   return { id: m.id, role, text: c.text || c.altText || "", options, received: m.received, citations };
 }
 
@@ -90,11 +97,38 @@ export default {
         if (!p || typeof p !== "object" || Array.isArray(p)) return fail(400, "json object required", "validate", cors);
       }
       else if (req.method === "GET" && pathname === "/messages") p = Object.fromEntries(searchParams);
+      else if (req.method === "POST" && pathname === "/tts") {
+        p = await req.json().catch(() => null);
+        if (!p || typeof p !== "object" || Array.isArray(p)) return fail(400, "json object required", "validate", cors);
+      }
       else return fail(404, "not found", "route", cors);
 
       const { conversationId, userId, token } = p;
       if (!conversationId || !userId || !token || !same(token, await sign(env, conversationId, userId)))
         return fail(401, "bad token", "auth", cors);
+
+      if (pathname === "/tts") {
+        const th = (ttsHits.get(conversationId) || []).filter((t) => now - t < 60000);
+        if (th.length >= 20) return fail(429, "rate limited", "limit", cors);
+        th.push(now); ttsHits.set(conversationId, th);
+        if (ttsHits.size > 1000) for (const [k, v] of ttsHits) if (now - v[v.length - 1] >= 60000) ttsHits.delete(k);
+        let text = FILLER;
+        if (!p.filler) {
+          if (typeof p.messageId !== "string" || !p.messageId) return fail(400, "messageId or filler required", "validate", cors);
+          const list = (await zd(env, "GET", `/conversations/${conversationId}/messages`, null, "list messages")).messages || [];
+          const m = list.find((x) => x.id === p.messageId);
+          const n = m && normalize(m);
+          if (!n || n.role === "user" || !n.text) return fail(404, "message not found", "tts", cors);
+          text = splitSources(n.text).body.replace(/https?:\/\/\S+/g, "").replace(/[*_`#]+/g, "").replace(/\s+/g, " ").trim().slice(0, 1500);
+          if (!text) return fail(404, "message not found", "tts", cors);
+        }
+        const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${env.ELEVENLABS_VOICE_ID}/stream?output_format=mp3_44100_128`, {
+          method: "POST", headers: { "xi-api-key": env.ELEVENLABS_API_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ text, model_id: env.ELEVENLABS_MODEL }),
+        });
+        if (!r.ok || !r.body) return fail(502, `elevenlabs ${r.status}`, "tts", cors);
+        return new Response(r.body, { status: 200, headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store", ...cors } });
+      }
 
       if (pathname === "/message") {
         if (p.payload !== undefined && (typeof p.payload !== "string" || p.payload.length > 2000))
