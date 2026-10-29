@@ -345,6 +345,19 @@
       promoOn = code === "SERENE10" && cart.length > 0 && !cart.some(function (l) { return cat[l.id] && cat[l.id].sale; });
       draw(); if (promoOn) clearErrs(); else show("PROMO-04");
     };
+    // order recap from what was entered and ordered only
+    var confRecap = function (c, promo) {
+      var m = function (x) { return "$" + (Number.isInteger(x) ? x : x.toFixed(2)); }, tot = 0, v = function (id) { return (d.getElementById(id).value || "").trim(); };
+      d.getElementById("conf-lines").innerHTML = c.map(function (l) {
+        var p = cat[l.id]; if (!p) return ""; var u = l.price != null ? l.price : (p.sale || p.price); tot += u * l.qty;
+        return '<li><span class="lineart grain"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><use href="#a-' + esc(p.art) + '"/></svg></span><span>' + esc(p.name) + '<small>Qty ' + l.qty + '</small></span><span>' + m(u * l.qty) + '</span></li>';
+      }).join("");
+      var off = promo ? Math.round(tot * 10) / 100 : 0;
+      d.getElementById("conf-tot").innerHTML = (promo ? '<div><dt>Subtotal</dt><dd>' + m(tot) + '</dd></div><div><dt>SERENE10 (10% off)</dt><dd>−' + m(off) + '</dd></div>' : '') + '<div class="gt"><dt>Total</dt><dd>' + m(Math.round((tot - off) * 100) / 100) + '</dd></div>';
+      var em = v("co-email"); d.getElementById("conf-email").textContent = em ? " (" + em + ")" : "";
+      var l2 = [v("co-name"), v("co-street"), v("co-apt"), v("co-city") + (v("co-city") && v("co-state") ? ", " : " ") + v("co-state") + " " + v("co-zip")].filter(function (x) { return x.trim(); });
+      d.getElementById("conf-addr").innerHTML = l2.map(esc).join("<br>");
+    };
     if (order) order.addEventListener("submit", function (e) {
       e.preventDefault();
       var cart0 = readCart() || presetCart(); if (!cart0.length) return; // empty cart: nothing to order
@@ -354,10 +367,12 @@
       if (zip === "00000") return show("PAY-201");
       if (!/^\d{5}(-\d{4})?$/.test(zip)) return show("ADDR-12");
       var n = "SD-2" + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+      var snap = confRecap(cart0, promoOn); // before the cart is cleared
       saveCart([]); promoOn = false; draw(); clearErrs();
       d.getElementById("conf-no").textContent = n;
+      d.getElementById("wren").hidden = false; d.querySelector(".checkout").classList.add("done");
       d.querySelector(".co-grid").hidden = true; d.getElementById("confirmed").hidden = false;
-      d.querySelector(".checkout h1").textContent = "Order placed"; d.getElementById("confirmed").focus();
+      d.querySelector(".checkout h1").textContent = "Order placed"; d.getElementById("confirmed").focus({ preventScroll: true }); scrollTo(0, 0);
     });
     window.addEventListener("pageshow", function (e) { if (e.persisted) { draw(); } });
     if (promo) promo.addEventListener("submit", function (e) { e.preventDefault(); applyPromo(); });
