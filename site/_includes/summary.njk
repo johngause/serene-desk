@@ -1,5 +1,5 @@
 {% import "art.njk" as a %}
-<ul class="lines" id="lines">
+<ul class="lines" id="lines" data-shop="{{ '/desks/' | url }}">
   {% for p in products %}{% if p.id in site.preset %}
   <li class="line" data-id="{{ p.id }}" data-qty="1" data-price="{{ p.sale or p.price }}">
     <div class="lineart grain">{{ a.art(p.art) }}</div>

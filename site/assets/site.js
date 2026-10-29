@@ -292,7 +292,7 @@
       if (!cart.length) {
         var li = d.createElement("li"), h = d.createElement("h2"), t = d.createElement("p"), a = d.createElement("a");
         li.className = "empty"; h.textContent = "Your cart is empty."; t.textContent = "Nothing here yet. Start with a desk, or something small for the one you have.";
-        a.className = "btn lamp"; a.href = siteBase + "desks/"; a.textContent = "Shop desks";
+        a.className = "btn lamp"; a.href = lines.dataset.shop; a.textContent = "Shop desks";
         li.append(h, t, a); lines.replaceChildren(li);
       }
       d.querySelectorAll(".totals").forEach(function (e) { e.hidden = !cart.length; });
