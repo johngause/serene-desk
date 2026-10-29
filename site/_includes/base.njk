@@ -58,7 +58,7 @@ try{if(localStorage.getItem("sd-ann-closed"))h.classList.add("ann-closed")}catch
 <script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key={{ config.zendeskWidgetKey }}"></script>
 {% elif config.widget == "custom" %}
 <link rel="stylesheet" href="{{ '/widget/widget.css' | url }}">
-<script>window.SereneWidget = { relayUrl: {{ config.relayUrl | dump | safe }}, agentName: {{ config.agentName | dump | safe }}, brandName: {{ config.brandName | dump | safe }}, pollFastMs: {{ config.pollFastMs | default(1500) }}, pollIdleMs: {{ config.pollIdleMs | default(10000) }}, quietMs: {{ config.quietMs | default(12000) }}, voicePauseMs: {{ config.voicePauseMs | default(1800) }}, stallPatterns: {{ config.stallPatterns | default([]) | dump | safe }}, voiceSkipPatterns: {{ config.voiceSkipPatterns | default([]) | dump | safe }}, avatar: {{ '/widget/wren-avatar.svg' | url | dump | safe }} };</script>
+<script>window.SereneWidget = { relayUrl: {{ config.relayUrl | dump | safe }}, agentName: {{ config.agentName | dump | safe }}, brandName: {{ config.brandName | dump | safe }}, siteActions: {{ (config.siteActions == true) | dump | safe }}, pollFastMs: {{ config.pollFastMs | default(1500) }}, pollIdleMs: {{ config.pollIdleMs | default(10000) }}, quietMs: {{ config.quietMs | default(12000) }}, voicePauseMs: {{ config.voicePauseMs | default(1800) }}, stallPatterns: {{ config.stallPatterns | default([]) | dump | safe }}, voiceSkipPatterns: {{ config.voiceSkipPatterns | default([]) | dump | safe }}, avatar: {{ '/widget/wren-avatar.svg' | url | dump | safe }} };</script>
 <script src="{{ '/widget/widget.js' | url }}" defer></script>
 {% endif %}
 </body>
