@@ -290,6 +290,8 @@
     var t = (m.text || "").replace(/\n[ \t]*Sources?:[\s\S]*$/i, "")
       .replace(/\[([^\]]+)\]\(https?:\/\/[^)]*\)/g, "$1").replace(/https?:\/\/\S+/g, "")
       .replace(/\*\*/g, "").replace(/^\s*[*-]\s+/gm, "");
+    var low = t.toLowerCase(); // shown in chat, never spoken (e.g. the rating prompt)
+    if ((C.voiceSkipPatterns || []).some(function (p) { return p && low.indexOf(String(p).toLowerCase()) >= 0; })) return "";
     return t.trim();
   }
   function startRec() {

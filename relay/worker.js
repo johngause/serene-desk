@@ -133,7 +133,7 @@ export default {
         let r;
         try { r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${env.ELEVENLABS_VOICE_ID}/stream?output_format=mp3_44100_128`, {
           method: "POST", headers: { "xi-api-key": env.ELEVENLABS_API_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({ text, model_id: env.ELEVENLABS_MODEL }),
+          body: JSON.stringify({ text, model_id: env.ELEVENLABS_MODEL, apply_text_normalization: "on" }), // flash otherwise garbles "$59 (from $79)" runs,
         }); } catch { return fail(502, "elevenlabs unreachable", "tts", cors); }
         if (!r.ok || !r.body) return fail(502, `elevenlabs ${r.status}`, "tts", cors);
         return new Response(r.body, { status: 200, headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store", ...cors } });
