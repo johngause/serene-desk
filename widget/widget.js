@@ -15,7 +15,7 @@
      Chat tab = silent text; Voice tab = ring + hands-free. The mic button there only mutes; Stop is the only interrupt. ---- */
   var SR = window.webkitSpeechRecognition || window.SpeechRecognition, TTS = window.speechSynthesis;
   var voiceOn = false, rec = null, recRun = false, speaking = false, queue = [], cur = "", curUtt = null;
-  var fillerT = null, restartT = null, fails = 0, recent = "", endAt = 0, awaiting = false, voices = [], voiceName = "", VKEY = "sd-voice";
+  var pend = "", pendItm = "", pauseT = null, fillerT = null, restartT = null, fails = 0, recent = "", endAt = 0, awaiting = false, voices = [], voiceName = "", VKEY = "sd-voice";
   // half-duplex: no recognition while Wren speaks (+ TAIL after).
   var TAIL = 600, muted = false, TABK = "sd-tab";
   var echoT = null, echoFor = "", held = [], hush = false, awaitEcho = false, thinking = false, quiet = false, polled = false;
@@ -60,7 +60,7 @@
       if (sylT < sylLen) a = Math.sin(Math.PI * sylT / sylLen) * (0.65 + 0.35 * Math.random());
       a = Math.max(a, kick * 0.9);
     }
-    kick *= Math.exp(-dt * 7);
+    kick = speaking ? kick * Math.exp(-dt * 7) : 0;
     for (var i = 0; i < VN; i++) {
       var v = 0.004 * Math.random();
       if (a > 0) {
@@ -70,9 +70,9 @@
         v += a * (base + m1 + m2) * (0.8 + 0.4 * Math.random());
       }
       v = Math.min(1, v);
-      spec[i] += (v - spec[i]) * (v > spec[i] ? 0.55 : 0.09);
+      spec[i] += (v - spec[i]) * (v > spec[i] ? 0.55 : speaking ? 0.09 : 0.4);
     }
-    vamp += (a - vamp) * (a > vamp ? 0.5 : 0.07);
+    vamp += (a - vamp) * (a > vamp ? 0.5 : speaking ? 0.07 : 0.4);
   }
   function vizDraw(t, dt, still) {
     if (!ctx || !COL) return;
@@ -81,7 +81,7 @@
       vamp = speaking ? 0.3 : 0; venergy = speaking ? 1 : 0; sparks = [];
     } else {
       vizVoice(dt, t);
-      venergy += ((speaking ? 1 : 0) - venergy) * 0.04;
+      venergy += ((speaking ? 1 : 0) - venergy) * (speaking ? 0.4 : 0.3); // fast attack, fast release (stops with the voice)
     }
     var cx = vW / 2, cy = vH * 0.45, R0 = Math.min(vW, vH) * 0.19 * (1 + vamp * 0.06 + (still ? 0 : 0.015 * Math.sin(t * 1.1)));
     ctx.globalCompositeOperation = "source-over";
@@ -166,7 +166,8 @@
     if (!voiceOn || speaking) return;
     if (!queue.length) { status(lab()); return; }
     clearTimeout(restartT);
-    cur = queue.shift(); speaking = true; thinking = false; status(lab());
+    cur = queue.shift(); speaking = true; thinking = false; vizKick(1); status(lab()); // ring moves at speak(), not when audio starts
+    dropPend();
     if (recRun) { try { rec.abort(); } catch (e) {} } // half-duplex: stop listening while Wren talks
     var u = new SpeechSynthesisUtterance(cur), v = pickVoice();
     if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
@@ -202,7 +203,7 @@
     try { rec.start(); recRun = true; status(lab()); } catch (e) {}
   }
   function voiceOff(msg) {
-    voiceOn = false; awaiting = false; thinking = false; vizStop(); clearTimeout(fillerT); clearTimeout(restartT); fails = 0; stopSpeech();
+    voiceOn = false; awaiting = false; thinking = false; dropPend(); vizStop(); clearTimeout(fillerT); clearTimeout(restartT); fails = 0; stopSpeech();
     if (rec) { try { rec.abort(); } catch (e) {} }
     recRun = false; el.input.value = ""; el.panel.classList.remove("sw-voice"); tabsSync();
     status(msg || "Voice off");
@@ -212,30 +213,35 @@
     el.panel.classList.add("sw-voice"); tabsSync(); vizStart(); startRec(); status(lab());
     if (S) { quiet = true; poll(false).then(function () { quiet = false; }); } // what is already there is not spoken
   }
+  function dropPend() { clearTimeout(pauseT); pend = pendItm = ""; if (el.input) el.input.value = ""; }
+  function flushPend() {
+    var t = (pend + " " + pendItm).trim(); dropPend(); if (!t) return;
+    awaiting = true; clearTimeout(fillerT);
+    fillerT = setTimeout(function () { // filler once, only if no reply yet (counted from the actual send)
+      if (awaiting && voiceOn && C.voiceFiller) { awaiting = false; speakText(C.voiceFiller); }
+    }, 2500);
+    send({ text: t });
+  }
   function initVoice() {
-    rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = false;
-    rec.onresult = function (e) {
-      var fin = "", itm = "";
+    rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = true;
+    rec.onresult = function (e) { // finals pile up in pend; we send only after voicePauseMs with no new result
+      var itm = "";
       for (var i = e.resultIndex; i < e.results.length; i++) {
-        var r = e.results[i]; if (r.isFinal) fin += r[0].transcript; else itm += r[0].transcript;
+        var r = e.results[i], tx = r[0].transcript.trim();
+        if (r.isFinal) { if (tx) pend += (pend ? " " : "") + tx; } else itm += tx;
       }
-      var heard = (fin || itm).trim(); if (!heard) return;
-      if (blocked()) return; // half-duplex: anything heard while Wren speaks (or just after) is her own voice
-      fails = 0;
-      if (!fin) { el.input.value = heard; return; }
-      el.input.value = "";
-      awaiting = true; clearTimeout(fillerT);
-      fillerT = setTimeout(function () { // filler once, only if no reply yet
-        if (awaiting && voiceOn && C.voiceFiller) { awaiting = false; speakText(C.voiceFiller); }
-      }, 2500);
-      send({ text: heard.trim() });
+      pendItm = itm;
+      var heard = (pend + " " + itm).trim(); if (!heard) return;
+      if (blocked()) { pend = pendItm = ""; el.input.value = ""; return; } // half-duplex: anything heard while Wren speaks (or just after) is her own voice
+      fails = 0; el.input.value = heard;
+      clearTimeout(pauseT); pauseT = setTimeout(flushPend, C.voicePauseMs || 1800);
     };
     rec.onerror = function (e) {
       if (e.error === "not-allowed" || e.error === "service-not-allowed") voiceOff("Microphone access is blocked");
       else if (e.error !== "no-speech" && e.error !== "aborted") fails++; // network, audio-capture, ...
     };
-    rec.onend = function () { // Chrome ends recognition on silence: restart while voice is on
-      recRun = false;
+    rec.onend = function () { // Chrome ends recognition on silence: restart while voice is on; pending text and the pause timer survive
+      recRun = false; pend = (pend + " " + pendItm).trim(); pendItm = "";
       if (!voiceOn) return;
       if (fails >= 3) return voiceOff("Voice unavailable");
       clearTimeout(restartT); restartT = setTimeout(startRec, [250, 1000, 3000][fails] || 250);
@@ -373,7 +379,7 @@
       el.mic.addEventListener("click", function () { // mute toggle only: never touches Wren's speech
         if (!voiceOn) return;
         muted = !muted; el.mic.setAttribute("aria-pressed", String(!muted));
-        if (muted) { if (rec) { try { rec.abort(); } catch (e) {} } } else startRec();
+        if (muted) { dropPend(); if (rec) { try { rec.abort(); } catch (e) {} } } else startRec();
         status(lab());
       });
     }

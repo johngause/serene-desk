@@ -9,5 +9,6 @@
   "voiceSkipPatterns": ["bear with me", "one moment", "let me look"],
   "pollFastMs": 1500,
   "pollIdleMs": 10000,
-  "quietMs": 12000
+  "quietMs": 12000,
+  "voicePauseMs": 1800
 }
