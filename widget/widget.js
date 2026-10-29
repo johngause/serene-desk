@@ -6,7 +6,9 @@
   if (!C.relayUrl) return;
   var KEY = "sd-chat", S = null, seen = {}, lastId = null;
   // a reload starts a fresh conversation (next open calls POST /session); links and the logo keep it
-  try { var nav0 = performance.getEntriesByType("navigation")[0]; if (nav0 && nav0.type === "reload") { sessionStorage.removeItem(KEY); sessionStorage.removeItem("sd-tab"); sessionStorage.removeItem("sd-open"); } } catch (e) {}
+  // Chrome also types same-URL navigations (link to the current page, GET form to /checkout/#err-…) as "reload", so link clicks and form submits stamp sd-nav first
+  try { document.addEventListener("click", function (e) { var a = e.target.closest && e.target.closest("a[href]"); if (a) sessionStorage.setItem("sd-nav", "1"); }, true); document.addEventListener("submit", function () { sessionStorage.setItem("sd-nav", "1"); }, true); } catch (e) {}
+  try { var nav0 = performance.getEntriesByType("navigation")[0], viaSite = sessionStorage.getItem("sd-nav"); sessionStorage.removeItem("sd-nav"); if (nav0 && nav0.type === "reload" && !viaSite) { sessionStorage.removeItem(KEY); sessionStorage.removeItem("sd-tab"); sessionStorage.removeItem("sd-open"); } } catch (e) {}
   var waiting = false, fast = false, fastStart = 0, lastNew = 0, timer = null, open = false, busy = false, backoff = 0, retried = false;
   var el = {};
 
@@ -278,7 +280,7 @@
     var done = function () {
       if (tk !== gen) return; speaking = false; real = false; recent = cur; endAt = Date.now(); cur = "";
       if (queue.length) return next();
-      if (voiceOn && waiting && !hush) thinking = true; // stall line finished, real reply not here yet
+      if (voiceOn && waiting && !hush) { thinking = true; lastNew = Date.now(); } // stall line finished, real reply not here yet
       status(lab());
       clearTimeout(restartT); restartT = setTimeout(startRec, TAIL + 30);
     };
@@ -313,7 +315,7 @@
     status(msg || "Voice off");
   }
   function voiceStart() {
-    ensureAudio(); voiceOn = true; muted = false; el.mic.setAttribute("aria-pressed", "true");
+    ensureAudio(); document.addEventListener("pointerdown", ensureAudio, { once: true }); /* restored voice may have no gesture yet: first click unlocks playback */ voiceOn = true; muted = false; el.mic.setAttribute("aria-pressed", "true");
     el.panel.classList.add("sw-voice"); tabsSync(); vizStart(); startRec(); status(lab());
     if (S) { quiet = true; poll(false).then(function () { quiet = false; }); } // what is already there is not spoken
   }
@@ -613,7 +615,7 @@
      A keyword prefilter keeps ordinary questions off the intent route. POST /intent (Jev) says which action and cart item;
      any doubt, timeout or error sends the message to Zendesk as usual. The result is shown locally and spoken; Zendesk
      only gets a "[Site action] ..." note, which poll() hides along with the agent's replies to it. */
-  var ACT = /\b(remove|take\s+out|drop|delete)\b|\b(apply|reapply|re-apply|try|use)\b.*\b(code|promo|coupon|discount)\b/i, NOTE = "[Site action] ";
+  var ACT = /\b(remove|take\s+out|drop|delete|get\s+rid\s+of)\b|\b(apply|reapply|re-apply|try|use|put)\b.*(\b(code|promo|coupon|discount|serene10)\b|\b[A-Z0-9]{5,}\b)/i, NOTE = "[Site action] ";
   var hideReplies = false, unanswered = false; // unanswered: a customer message with no agent reply yet; a note after one hides nothing
   function money(n) { return "$" + (Number.isInteger(n) ? n : n.toFixed(2)); }
   function sayParts(ps) { // keep equal to sayText() in relay/worker.js, which renders the same sentences for natural voice
@@ -658,7 +660,7 @@
     var SC = window.SereneCart, cart = C.siteActions && p.text && SC && ACT.test(p.text) ? SC.items() : null;
     if (!cart || !cart.length) return doSend(p);
     var pend = waiting; // an ordinary question is still awaiting its answer: leave its dots and thinking state alone
-    busy = true; el.send.disabled = true; waiting = true; el.typing.hidden = false; hush = false;
+    busy = true; el.send.disabled = true; waiting = true; lastNew = Date.now(); el.typing.hidden = false; hush = false;
     if (voiceOn) { ensureAudio(); if (speaking || queue.length) stopSpeech(); thinking = true; status(lab()); }
     intent(p.text, cart).then(function (r) {
       var res = null;
@@ -675,7 +677,7 @@
   function doSend(p) {
     if (busy) return;
     if (voiceOn) ensureAudio();
-    busy = true; el.send.disabled = true; waiting = true;
+    busy = true; el.send.disabled = true; waiting = true; lastNew = Date.now();
     hush = false; awaitEcho = true; held = []; echoFor = (p.label || p.text || "").trim(); clearTimeout(echoT); // replies after this message are spoken; anything polled before its echo is older
     if (voiceOn) { if (speaking || queue.length) stopSpeech(); thinking = true; status(lab()); }
     var tmp = addMsg({ role: "user", text: p.label || p.text, pending: true });
