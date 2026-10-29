@@ -7,7 +7,7 @@
   var KEY = "sd-chat", S = null, seen = {}, lastId = null;
   // a reload starts a fresh conversation (next open calls POST /session); links and the logo keep it
   try { var nav0 = performance.getEntriesByType("navigation")[0]; if (nav0 && nav0.type === "reload") { sessionStorage.removeItem(KEY); sessionStorage.removeItem("sd-tab"); } } catch (e) {}
-  var fast = false, fastStart = 0, lastNew = 0, timer = null, open = false, busy = false, backoff = 0, retried = false;
+  var waiting = false, fast = false, fastStart = 0, lastNew = 0, timer = null, open = false, busy = false, backoff = 0, retried = false;
   var el = {};
 
   /* ---- voice (Web Speech API, Chrome). Ideas from MIT voice-chat demos (see commit); code is original.
@@ -337,13 +337,16 @@
       clearTimeout(restartT); restartT = setTimeout(startRec, [250, 1000, 3000][fails] || 250);
     };
   }
+  function isStall(m) {
+    var low = (m.text || "").toLowerCase();
+    return (C.voiceSkipPatterns || []).some(function (p) { return p && low.indexOf(String(p).toLowerCase()) >= 0; });
+  }
   function onAgentMessage(m) {
     if (!voiceOn) return;
     awaiting = false; clearTimeout(fillerT);
     if (hush || quiet) return; // interrupted, or already there when voice came on
     if (awaitEcho) { held.push(m); return; } // before the echo of the latest send: stale if the echo shows up, spoken if the safety timer fires
-    var low = (m.text || "").toLowerCase();
-    if ((C.voiceSkipPatterns || []).some(function (p) { return p && low.indexOf(String(p).toLowerCase()) >= 0; })) { status(lab()); return; }
+    if (isStall(m)) { status(lab()); return; }
     thinking = false; var t = speechText(m); if (t) speakText(t, m.id); else status(lab());
   }
 
@@ -585,6 +588,7 @@
   }
 
   function fail(e, again) {
+    waiting = false; el.typing.hidden = true;
     if (e.status === 401 && !retried) { // stale session: start fresh once
       retried = true; S = null; seen = {}; lastId = null; el.log.textContent = "";
       try { sessionStorage.removeItem(KEY); } catch (x) {}
@@ -597,7 +601,7 @@
   function send(p) {
     if (busy) return;
     if (voiceOn) ensureAudio();
-    busy = true; el.send.disabled = true;
+    busy = true; el.send.disabled = true; waiting = true;
     hush = false; awaitEcho = true; held = []; echoFor = (p.label || p.text || "").trim(); clearTimeout(echoT); // replies after this message are spoken; anything polled before its echo is older
     if (voiceOn) { if (speaking || queue.length) stopSpeech(); thinking = true; status(lab()); }
     var tmp = addMsg({ role: "user", text: p.label || p.text, pending: true });
@@ -610,7 +614,7 @@
       clearTimeout(echoT); echoT = setTimeout(function () { clearEcho(true); }, 6000); // ponytail: safety net if the relay never echoes the user message
       startFast();
     }).catch(function (e) {
-      tmp.remove(); clearEcho(false); thinking = false;
+      tmp.remove(); clearEcho(false); thinking = false; waiting = false; el.typing.hidden = true;
       if (p.text && e.status !== 401 && !el.input.value) el.input.value = p.text;
       fail(e, function () { busy = false; el.send.disabled = false; send(p); });
     }).then(function () { busy = false; el.send.disabled = false; });
@@ -619,7 +623,7 @@
   /* ---- polling ---- */
   function startFast() {
     fastStart = lastNew = Date.now(); fast = true;
-    el.typing.hidden = false; scroll(); schedule();
+    el.typing.hidden = !waiting; scroll(); schedule();
   }
   function schedule() {
     clearTimeout(timer);
@@ -639,13 +643,13 @@
           var o = el.log.querySelector('.sw-me[data-opt="1"]');
           if (awaitEcho && (m.text || "").trim() === echoFor) clearEcho(false);
           if (o) { delete o.dataset.opt; return; }
-        } else got++;
+        } else { got++; if (!isStall(m)) waiting = false; }
         addMsg(m);
         if (m.role !== "user") onAgentMessage(m);
       });
       var n = Date.now();
-      if (got) { lastNew = n; el.typing.hidden = !fast; note(""); }
-      if (fast && (n - lastNew > C.quietMs || n - fastStart > 90000)) { fast = false; el.typing.hidden = true; }
+      if (got) { lastNew = n; el.typing.hidden = !waiting; note(""); }
+      if (fast && (n - lastNew > C.quietMs || n - fastStart > 90000)) { fast = false; waiting = false; el.typing.hidden = true; }
       schedule();
     }).catch(function (e) {
       if (initial || e.status === 401) return fail(e, function () { return poll(true); });
@@ -666,7 +670,7 @@
   }
   function closePanel() {
     if (voiceOn) voiceOff();
-    open = false; clearTimeout(timer); el.panel.inert = true;
+    open = false; waiting = false; el.typing.hidden = true; clearTimeout(timer); el.panel.inert = true;
     el.launch.hidden = false; el.launch.focus();
     if (matchMedia("(prefers-reduced-motion:reduce)").matches) { el.panel.hidden = true; return; }
     el.panel.classList.add("sw-out");
