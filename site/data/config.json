@@ -10,5 +10,6 @@
   "pollFastMs": 1500,
   "pollIdleMs": 10000,
   "quietMs": 12000,
+  "typingGraceMs": 8000,
   "voicePauseMs": 1800
 }
