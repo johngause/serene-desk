@@ -1,5 +1,5 @@
 """
-Zendesk Conversations API proof of concept (Cobalt / Sven live-demo check).
+Zendesk Conversations API proof of concept.
 
 Question it answers: if a conversation is created through the API with the AI agent
 put in control, does the Zendesk AI agent actually reply?
