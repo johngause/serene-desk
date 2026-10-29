@@ -5,8 +5,15 @@ title: Checkout
 description: Checkout for your Serene Desk order.
 ---
 <section class="gut checkout"><div class="wrap">
+  <div class="wren-stage" id="wren" aria-hidden="true" hidden><div class="wr-x"><div class="wr-flip"><div class="wr-y"><svg viewBox="100 70 370 372" aria-hidden="true" focusable="false"><g class="wr-leg"><path d="M214 420v20M258 422v18" stroke="#7A5232" stroke-width="7" stroke-linecap="round"/><path d="M204 440h22M248 440h22" stroke="#7A5232" stroke-width="6" stroke-linecap="round"/></g><g class="wr-body"><g class="wr-tail"><path d="M112 128h58l16 78-40 14z" fill="#9B6B43"/><path d="M158 128h12l16 78-14 4z" fill="#B07F52"/><path d="M104 100q0-22 22-20l30 8q14 6 10 40H112z" fill="#7A5232"/></g><circle cx="236" cy="300" r="128" fill="#C99A68"/><path d="M262 306q4 6 60-6l40 18q-30 90-110 108q36-38 10-120z" fill="#E6C59B"/><path d="M128 360q20 50 112 68q-110 4-112-68z" fill="#A87848"/><ellipse cx="229" cy="272" rx="90" ry="38" transform="rotate(4 229 272)" fill="#9A6B43"/><g class="wr-head"><circle cx="322" cy="218" r="82" fill="#DDB080"/><path d="M160 242q20-70 110-74q90 0 132 52q-10 70-80 78q-60 4-100-20z" fill="#C99A68"/><circle cx="346" cy="200" r="20" fill="#1C2530"/><circle cx="352" cy="194" r="6" fill="#F2F4F5"/><path d="M396 203l70 15-70 17z" fill="#F0BE62"/><path d="M396 222l70-4-70 17z" fill="#D9A03F"/></g></g></svg></div></div></div></div>
   <h1>Checkout</h1>
-  <div id="confirmed" tabindex="-1" hidden><p>Confirmation sent to your email.</p><p class="mono">Order number <span id="conf-no"></span></p></div>
+  <div id="confirmed" tabindex="-1" hidden>
+    <p class="conf-sent">Confirmation sent to your email<span id="conf-email"></span>.</p>
+    <p class="conf-no">Order number <span class="mono" id="conf-no"></span></p>
+    <div class="conf-recap"><ul id="conf-lines"></ul><dl id="conf-tot"></dl></div>
+    <div class="conf-addr"><h2>Delivering to</h2><address id="conf-addr"></address></div>
+    <p class="conf-links"><a href="{{ '/shipping/' | url }}">Shipping</a><a href="{{ '/returns/' | url }}">Returns</a><a class="btn lamp" href="{{ '/desks/' | url }}">Keep shopping</a></p>
+  </div>
   <div class="co-grid">
     <form class="co-form" id="order" method="get" action="{{ '/checkout/' | url }}#err-PAY-201" novalidate>
       <div class="errors" id="errors">
