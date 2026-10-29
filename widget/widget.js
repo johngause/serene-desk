@@ -614,7 +614,7 @@
      any doubt, timeout or error sends the message to Zendesk as usual. The result is shown locally and spoken; Zendesk
      only gets a "[Site action] ..." note, which poll() hides along with the agent's replies to it. */
   var ACT = /\b(remove|take\s+out|drop|delete|promo|code|coupon|discount)\b/i, NOTE = "[Site action] ";
-  var hideReplies = false;
+  var hideReplies = false, unanswered = false; // unanswered: a customer message with no agent reply yet; a note after one hides nothing
   function money(n) { return "$" + (Number.isInteger(n) ? n : n.toFixed(2)); }
   function sayParts(ps) { // keep equal to sayText() in relay/worker.js, which renders the same sentences for natural voice
     return ps.map(function (x) {
@@ -652,14 +652,15 @@
     if (busy) return;
     var SC = window.SereneCart, cart = C.siteActions && p.text && SC && ACT.test(p.text) ? SC.items() : null;
     if (!cart || !cart.length) return doSend(p);
+    var pend = waiting; // an ordinary question is still awaiting its answer: leave its dots and thinking state alone
     busy = true; el.send.disabled = true; waiting = true; el.typing.hidden = false; hush = false;
     if (voiceOn) { ensureAudio(); if (speaking || queue.length) stopSpeech(); thinking = true; status(lab()); }
     intent(p.text, cart).then(function (r) {
       var res = null;
       try { res = r && runAction(r, cart, p.text); } catch (e) { res = null; }
-      busy = false; el.send.disabled = false; waiting = false; el.typing.hidden = true;
-      if (!res) { thinking = false; return doSend(p); } // normal Zendesk path
-      el.input.value = ""; awaiting = false; thinking = false;
+      busy = false; el.send.disabled = false; waiting = pend; el.typing.hidden = !pend;
+      if (!res) { if (!pend) thinking = false; return doSend(p); } // normal Zendesk path
+      el.input.value = ""; if (!pend) { awaiting = false; thinking = false; }
       addMsg({ role: "user", text: p.text });
       addMsg({ role: "agent", text: sayParts(res.parts) });
       if (voiceOn) { dropPend(); speakText(sayParts(res.parts), "act", res.parts); } else status(lab());
@@ -708,8 +709,9 @@
         if (seen[m.id]) return;
         seen[m.id] = 1; lastId = m.id;
         // a "[Site action]" note and the agent's replies to it stay out of the transcript, until the customer's next message
-        if (m.role === "user") { if ((m.text || "").indexOf(NOTE) === 0) { hideReplies = true; return; } hideReplies = false; }
+        if (m.role === "user") { if ((m.text || "").indexOf(NOTE) === 0) { hideReplies = !unanswered; return; } hideReplies = false; unanswered = true; }
         else if (hideReplies) return;
+        else if (!isStall(m)) unanswered = false;
         if (m.role === "user") { // server echo replaces the optimistic copy
           var o = el.log.querySelector('.sw-me[data-opt="1"]');
           if (awaitEcho && (m.text || "").trim() === echoFor) clearEcho(false);

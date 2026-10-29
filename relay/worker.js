@@ -151,6 +151,9 @@ export default {
         if (typeof msg !== "string" || !msg.trim() || msg.length > 300 || !Array.isArray(items) || !items.length || items.length > 20 ||
           !items.every((i) => i && typeof i.id === "string" && /^[\w-]{1,40}$/.test(i.id) && typeof i.name === "string" && i.name.length > 0 && i.name.length <= 60 && typeof i.sale === "boolean"))
           return fail(400, "text and cartItems required", "validate", cors);
+        const ih = (ttsHits.get("i:" + conversationId) || []).filter((t) => now - t < 60000);
+        if (ih.length >= 20) return fail(429, "rate limited", "limit", cors);
+        ih.push(now); ttsHits.set("i:" + conversationId, ih);
         if (!env.TYPESAFE_API_KEY) return fail(500, "intent not configured", "intent", cors);
         const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 2500);
         let r;
