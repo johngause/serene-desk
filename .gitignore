@@ -11,3 +11,6 @@ tools/test-runner/runs/
 screenshots/
 handoff.md
 .claude/worktrees/
+
+# answer key stays local
+tools/test-runner/tests.csv
