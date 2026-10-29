@@ -15,12 +15,12 @@
      Chat tab = silent text; Voice tab = ring + hands-free. The mic button there only mutes; Stop is the only interrupt. ---- */
   var SR = window.webkitSpeechRecognition || window.SpeechRecognition, TTS = window.speechSynthesis;
   var voiceOn = false, rec = null, recRun = false, speaking = false, queue = [], cur = "", curUtt = null;
-  var pend = "", pendItm = "", pauseT = null, fillerT = null, restartT = null, fails = 0, recent = "", endAt = 0, awaiting = false, voices = [], voiceName = "", VKEY = "sd-voice", MKEY = "sd-vmode", vmode = "natural";
+  var pend = "", pendItm = "", pauseT = null, restartT = null, fails = 0, recent = "", endAt = 0, awaiting = false, voices = [], voiceName = "", VKEY = "sd-voice", MKEY = "sd-vmode", vmode = "natural";
   // half-duplex: no recognition while Wren speaks (+ TAIL after).
   var TAIL = 600, muted = false, TABK = "sd-tab";
   var echoT = null, echoFor = "", held = [], hush = false, awaitEcho = false, thinking = false, quiet = false, polled = false;
   try { voiceName = localStorage.getItem(VKEY) || ""; vmode = localStorage.getItem(MKEY) === "browser" ? "browser" : "natural"; } catch (e) {}
-  function lab() { return speaking ? (C.agentName || "Wren") + " is speaking" : thinking ? "Thinking" : muted ? (C.agentName || "Wren") + " can't hear you" : "Listening"; }
+  function lab() { return speaking ? (C.agentName || "Wren") + " is speaking" : thinking ? "Thinking…" : muted ? (C.agentName || "Wren") + " can't hear you" : "Listening"; }
   function status(t) {
     if (el.status) el.status.textContent = t;
     if (el.vlabel) { el.vlabel.textContent = t; el.viz.dataset.s = speaking ? "speaking" : thinking ? "thinking" : muted ? "muted" : "listening"; }
@@ -29,7 +29,7 @@
   }
   function blocked() { return (speaking || queue.length > 0 || Date.now() - endAt < TAIL); }
   function interrupt() { // stops everything; later agent/human messages stay visible but are not spoken until the next send
-    hush = true; thinking = false; awaiting = false; clearTimeout(fillerT);
+    hush = true; thinking = false; awaiting = false;
     stopSpeech(); endAt = 0; startRec();
   }
 
@@ -133,6 +133,13 @@
     disc.addColorStop(0, rgba(mix(COL.line, COL.lamp, 0.15 + vamp * 0.25), 1)); disc.addColorStop(0.7, rgba(COL.deep, 1)); disc.addColorStop(1, rgba(mix(COL.deep, COL.slate, 0.2), 1));
     ctx.fillStyle = disc; ctx.beginPath(); ctx.arc(cx, cy, R0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = rgba(COL.lamp, 0.15 + vamp * 0.35); ctx.lineWidth = 1.2; ctx.stroke();
+    if (thinking && !speaking) { // calm lamp glow on the orb while a reply is awaited (static when reduced motion)
+      var gp = still ? 0.7 : 0.5 + 0.5 * Math.sin(t * 1.4), gl = ctx.createRadialGradient(cx, cy, R0 * 0.1, cx, cy, R0 * 1.7);
+      ctx.globalCompositeOperation = "lighter";
+      gl.addColorStop(0, rgba(COL.lamp, 0.25 + gp * 0.3)); gl.addColorStop(0.55, rgba(COL.oak, 0.12 + gp * 0.14)); gl.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(cx, cy, R0 * 1.7, 0, Math.PI * 2); ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+    }
     var shine = ctx.createLinearGradient(cx, cy - R0, cx, cy);
     shine.addColorStop(0, "rgba(255,255,255,0.08)"); shine.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = shine; ctx.beginPath(); ctx.ellipse(cx, cy - R0 * 0.45, R0 * 0.7, R0 * 0.4, 0, 0, Math.PI * 2); ctx.fill();
@@ -175,8 +182,8 @@
   function sentences(t) { // Chrome cuts long utterances (~15 s): browser voice speaks by sentence
     return (t.match(/[^.!?\n]+[.!?]*/g) || []).map(function (x) { return x.trim(); }).filter(function (x) { return /\w/.test(x); }).map(function (x) { return { t: x }; });
   }
-  function speakText(t, id, filler) { // natural voice: one item per message (relay /tts); browser voice: sentences
-    if (vmode === "natural" && (id || filler)) queue.push({ t: t, id: id, filler: filler, t0: performance.now() });
+  function speakText(t, id) { // natural voice: one item per message (relay /tts); browser voice: sentences
+    if (vmode === "natural" && id) queue.push({ t: t, id: id, t0: performance.now() });
     else queue = queue.concat(sentences(t));
     next();
   }
@@ -225,7 +232,7 @@
       if (aud.currentTime !== lastT || aud.paused) { lastT = aud.currentTime; lastAt = n; } else if (n - lastAt > 4000) mine.bad();
     }, 500);
     fetch(C.relayUrl + "/tts", { method: "POST", headers: { "Content-Type": "application/json" }, signal: mine.ctl.signal,
-      body: JSON.stringify(auth(it.filler ? { filler: true } : { messageId: it.id })) }).then(function (r) {
+      body: JSON.stringify(auth({ messageId: it.id })) }).then(function (r) {
       if (pl !== mine) return;
       if (!r.ok || !r.body) throw new Error("tts");
       wireAudio();
@@ -260,13 +267,14 @@
     if (!voiceOn || speaking) return;
     if (!queue.length) { status(lab()); return; }
     clearTimeout(restartT);
-    var it = queue.shift(), tk = ++gen, nat = vmode === "natural" && !!(it.id || it.filler);
+    var it = queue.shift(), tk = ++gen, nat = vmode === "natural" && !!it.id;
     cur = it.t; speaking = true; thinking = false; real = nat; if (!nat) vizKick(1); status(lab());
     dropPend();
     if (recRun) { try { rec.abort(); } catch (e) {} } // half-duplex: stop listening while Wren talks
     var done = function () {
       if (tk !== gen) return; speaking = false; real = false; recent = cur; endAt = Date.now(); cur = "";
       if (queue.length) return next();
+      if (voiceOn && waiting && !hush) thinking = true; // stall line finished, real reply not here yet
       status(lab());
       clearTimeout(restartT); restartT = setTimeout(startRec, TAIL + 30);
     };
@@ -293,7 +301,7 @@
     try { rec.start(); recRun = true; status(lab()); } catch (e) {}
   }
   function voiceOff(msg) {
-    voiceOn = false; awaiting = false; thinking = false; dropPend(); vizStop(); clearTimeout(fillerT); clearTimeout(restartT); fails = 0; stopSpeech();
+    voiceOn = false; awaiting = false; thinking = false; dropPend(); vizStop(); clearTimeout(restartT); fails = 0; stopSpeech();
     if (rec) { try { rec.abort(); } catch (e) {} }
     recRun = false; el.input.value = ""; el.panel.classList.remove("sw-voice"); tabsSync();
     status(msg || "Voice off");
@@ -306,10 +314,7 @@
   function dropPend() { clearTimeout(pauseT); pend = pendItm = ""; if (el.input) el.input.value = ""; }
   function flushPend() {
     var t = (pend + " " + pendItm).trim(); dropPend(); if (!t) return;
-    awaiting = true; clearTimeout(fillerT);
-    fillerT = setTimeout(function () { // filler once, only if no reply yet (counted from the actual send)
-      if (awaiting && voiceOn && C.voiceFiller) { awaiting = false; speakText(C.voiceFiller, null, true); }
-    }, 2500);
+    awaiting = true;
     send({ text: t });
   }
   function initVoice() {
@@ -339,15 +344,15 @@
   }
   function isStall(m) {
     var low = (m.text || "").toLowerCase();
-    return (C.voiceSkipPatterns || []).some(function (p) { return p && low.indexOf(String(p).toLowerCase()) >= 0; });
+    return (C.stallPatterns || []).some(function (p) { return p && low.indexOf(String(p).toLowerCase()) >= 0; });
   }
   function onAgentMessage(m) {
     if (!voiceOn) return;
-    awaiting = false; clearTimeout(fillerT);
+    awaiting = false;
     if (hush || quiet) return; // interrupted, or already there when voice came on
     if (awaitEcho) { held.push(m); return; } // before the echo of the latest send: stale if the echo shows up, spoken if the safety timer fires
-    if (isStall(m)) { status(lab()); return; }
-    thinking = false; var t = speechText(m); if (t) speakText(t, m.id); else status(lab());
+    var stall = isStall(m); if (!stall) thinking = false; // a stall line is spoken, but the reply is still awaited
+    var t = speechText(m); if (t) speakText(t, m.id); else status(lab());
   }
 
   function clearEcho(speakHeld) { // one timer; held messages are stale once the echo arrives, newer if the timer fires
