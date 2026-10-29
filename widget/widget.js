@@ -657,7 +657,7 @@
   /* ---- open / close ---- */
   function openPanel() {
     if (AC) ensureAudio();
-    open = true; el.panel.classList.remove("sw-out"); el.panel.hidden = false; el.launch.hidden = true;
+    open = true; el.panel.inert = false; el.panel.classList.remove("sw-out"); el.panel.hidden = false; el.launch.hidden = true;
     ensureSession().then(function () { return polled ? null : poll(false); }).then(function () {
       if (!lastId) startFast(); else schedule(); // fresh chat: poll fast so the greeting shows quickly
       try { if (el.tabs && !voiceOn && open && sessionStorage.getItem(TABK) === "voice") voiceStart(); } catch (e) {}
@@ -666,7 +666,7 @@
   }
   function closePanel() {
     if (voiceOn) voiceOff();
-    open = false; clearTimeout(timer);
+    open = false; clearTimeout(timer); el.panel.inert = true;
     el.launch.hidden = false; el.launch.focus();
     if (matchMedia("(prefers-reduced-motion:reduce)").matches) { el.panel.hidden = true; return; }
     el.panel.classList.add("sw-out");
