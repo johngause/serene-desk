@@ -1,10 +1,23 @@
 /* Content pages: prose, pending blocks, 404 */
 /* prose + pending */
+.prose .wrap{display:grid;grid-template-columns:5fr 7fr;gap:64px;align-items:start}
+.prose-head{position:sticky;top:110px}
+.prose-head h1{margin-bottom:0}
+.prose-body{max-width:64ch;min-width:0;padding-top:.6em}
+.prose-body>p:first-child{font-size:20px;line-height:1.55;color:var(--mist)}
+.prose-body>p:first-child b,.prose-body>p:first-child strong{font-weight:600}
 .prose .wrap,.cartpage .wrap,.notfound .wrap{padding-block:56px}
 .prose h1,.cartpage h1,.notfound h1,.checkout h1{font-size:clamp(40px,6vw,72px);margin-bottom:20px}
 .prose p,.lede{color:var(--fog);max-width:62ch}
+.prose p{margin-bottom:16px}
+.prose h2{font:400 clamp(28px,3vw,36px)/1.1 var(--display);color:var(--mist);margin:48px 0 14px}
+.prose h3{font:600 17px/1.3 var(--body);color:var(--mist);margin:28px 0 8px}
+.prose-body>h2:first-child{margin-top:0}
+.prose p a,.prose li a,.prose td a{color:var(--mist);text-decoration:underline;text-decoration-color:var(--lamp);text-underline-offset:3px;text-decoration-thickness:1px}
+.prose p a:hover,.prose li a:hover,.prose td a:hover{color:var(--lamp)}
+.prose strong,.prose b{color:var(--mist);font-weight:600}
+.prose .btn{text-decoration:none;color:var(--dusk)}
 .pending{border:1px dashed var(--line);border-radius:8px;padding:16px 18px;font:400 14px/1.5 var(--mono);color:var(--fog);margin:16px 0;max-width:62ch}
-.notfound h1 em{color:var(--lamp)}
 .lamp404{width:150px;display:block;margin-bottom:12px}
 
 /* prose lists + tables (content pages) */
@@ -12,8 +25,8 @@
 .prose ul{list-style:disc}
 .prose ol{list-style:decimal}
 .prose li{margin-bottom:8px;padding-left:4px}
-.prose table{border-collapse:collapse;margin:20px 0;font-size:15px;min-width:min(100%,520px)}
+.prose table{border-collapse:collapse;margin:20px 0;font-size:15px;width:100%}
 .prose th,.prose td{text-align:left;padding:10px 24px 10px 0;border-bottom:1px solid var(--line);vertical-align:top}
-.prose thead th{font:500 12px var(--mono);color:var(--fog);text-transform:uppercase}
+.prose thead th{font:600 14px var(--body);color:var(--mist);border-bottom-color:var(--fog)}
 .prose td{color:var(--fog)}
 .prose .why-line{max-width:34ch;color:var(--mist)}
