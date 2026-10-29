@@ -53,6 +53,7 @@ try{if(localStorage.getItem("sd-ann-closed"))h.classList.add("ann-closed")}catch
 </div></footer>
 
 <script src="{{ '/assets/site.js' | url }}" defer></script>
+<script src="{{ '/assets/shop.js' | url }}" defer></script>
 {% if config.widget == "zendesk" and config.zendeskWidgetKey %}
 <script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key={{ config.zendeskWidgetKey }}"></script>
 {% elif config.widget == "custom" %}

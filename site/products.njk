@@ -56,6 +56,7 @@ eleventyComputed:
       {% endif %}
       {% if p.sizeNote %}<p class="sizenote">{{ p.sizeNote }}</p>{% endif %}
       <button class="btn lamp" type="submit" id="addbtn">Add to cart</button>
+      <p class="vh" id="addlive" role="status" aria-live="polite"></p>
     </form>
 
     <section class="block" aria-labelledby="desc-h">
@@ -90,11 +91,11 @@ eleventyComputed:
       {% endif %}
       {% if dc and dc.bullets %}<ul class="spec-list">{% for b in dc.bullets %}<li>{{ b }}</li>{% endfor %}</ul>{% endif %}
       {% if isDesk %}
-      <h3>Variant SKUs</h3>
+      <details class="variants"><summary>Variant SKUs</summary>
       <table class="spec skus">
         <thead><tr><th scope="col">SKU</th><th scope="col">Width</th><th scope="col">Finish</th><th scope="col">Price</th></tr></thead>
         <tbody>{% for v in p.variants %}<tr><td class="mono">{{ v.sku }}</td><td>{% if v.width %}{{ v.width }} in{% else %}One size{% endif %}</td><td>{{ v.finish | capitalize }}</td><td class="mono">{{ v.price | money }}</td></tr>{% endfor %}</tbody>
-      </table>
+      </table></details>
       {% endif %}
     </section>
   </div>
