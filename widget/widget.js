@@ -195,13 +195,14 @@
     if (actx && actx.state === "suspended") actx.resume().catch(function () {});
   }
   function wireAudio() { // routing the element through a suspended context would mute it, so only wire a running one
+    if (actx && actx.state === "suspended") actx.resume().catch(function () {});
     if (srcNode || !actx || actx.state !== "running") return;
     try {
       srcNode = actx.createMediaElementSource(aud); ana = actx.createAnalyser(); ana.fftSize = 512; ana.smoothingTimeConstant = 0.5;
       srcNode.connect(ana); ana.connect(actx.destination); fbin = new Uint8Array(ana.frequencyBinCount); tbin = new Uint8Array(ana.fftSize);
     } catch (e) { srcNode = ana = null; }
   }
-  function freeAudio(p) { if (p.url) { try { URL.revokeObjectURL(p.url); } catch (e) {} p.url = null; } }
+  function freeAudio(p) { clearInterval(p.wd); if (p.url) { try { URL.revokeObjectURL(p.url); } catch (e) {} p.url = null; } }
   function haltAudio() {
     var p = pl; pl = null;
     if (p) { try { p.ctl.abort(); } catch (e) {} freeAudio(p); }
@@ -216,6 +217,13 @@
       if (mine.started) return done();
       queue = sentences(it.t).concat(queue); done();
     };
+    var t1 = Date.now(), lastT = -1, lastAt = t1; // watchdog: never stay "speaking" on a stuck stream
+    mine.wd = setInterval(function () {
+      if (pl !== mine) return clearInterval(mine.wd);
+      var n = Date.now();
+      if (!mine.started) { if (n - t1 > 8000) mine.bad(); return; }
+      if (aud.currentTime !== lastT || aud.paused) { lastT = aud.currentTime; lastAt = n; } else if (n - lastAt > 4000) mine.bad();
+    }, 500);
     fetch(C.relayUrl + "/tts", { method: "POST", headers: { "Content-Type": "application/json" }, signal: mine.ctl.signal,
       body: JSON.stringify(auth(it.filler ? { filler: true } : { messageId: it.id })) }).then(function (r) {
       if (pl !== mine) return;
@@ -225,7 +233,7 @@
         var ms = new MediaSource(); aud.src = mine.url = URL.createObjectURL(ms);
         ms.addEventListener("sourceopen", function () {
           var sb, rd = r.body.getReader();
-          try { sb = ms.addSourceBuffer("audio/mpeg"); } catch (e) { return mine.bad(); }
+          try { sb = ms.addSourceBuffer("audio/mpeg"); sb.addEventListener("error", mine.bad); } catch (e) { return mine.bad(); }
           (function pump() {
             rd.read().then(function (x) {
               if (pl !== mine) { rd.cancel().catch(function () {}); return; }
