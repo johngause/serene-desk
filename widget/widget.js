@@ -7,8 +7,8 @@
   var KEY = "sd-chat", S = null, seen = {}, lastId = null;
   // a reload starts a fresh conversation (next open calls POST /session); links and the logo keep it
   // Chrome also types same-URL navigations (link to the current page, GET form to /checkout/#err-…) as "reload", so link clicks and form submits stamp sd-nav first
-  try { document.addEventListener("click", function (e) { var a = e.target.closest && e.target.closest("a[href]"); if (a) sessionStorage.setItem("sd-nav", "1"); }, true); document.addEventListener("submit", function () { sessionStorage.setItem("sd-nav", "1"); }, true); } catch (e) {}
-  try { var nav0 = performance.getEntriesByType("navigation")[0], viaSite = sessionStorage.getItem("sd-nav"); sessionStorage.removeItem("sd-nav"); if (nav0 && nav0.type === "reload" && !viaSite) { sessionStorage.removeItem(KEY); sessionStorage.removeItem("sd-tab"); sessionStorage.removeItem("sd-open"); } } catch (e) {}
+  try { document.addEventListener("click", function (e) { var a = e.target.closest && e.target.closest("a[href]"); if (a) sessionStorage.setItem("sd-nav", Date.now()); }, true); document.addEventListener("submit", function () { sessionStorage.setItem("sd-nav", Date.now()); }, true); } catch (e) {}
+  try { var nav0 = performance.getEntriesByType("navigation")[0], viaSite = Date.now() - sessionStorage.getItem("sd-nav") < 5000; sessionStorage.removeItem("sd-nav"); if (nav0 && nav0.type === "reload" && !viaSite) { sessionStorage.removeItem(KEY); sessionStorage.removeItem("sd-tab"); sessionStorage.removeItem("sd-open"); } } catch (e) {}
   var waiting = false, fast = false, fastStart = 0, lastNew = 0, timer = null, open = false, busy = false, backoff = 0, retried = false;
   var el = {};
 
