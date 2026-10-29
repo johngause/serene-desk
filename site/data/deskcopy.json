@@ -84,7 +84,8 @@
         "Price",
         "48 in $649 · 60 in $729 · 72 in $799"
       ]
-    ]
+    ],
+    "desc": "A sit-stand desk built to stay out of the way. It rises at 38 dB, quieter than a library, so you can change height mid-call. One wooden dial replaces the usual button panel, with no screen and no beeps, and a built-in cable spine keeps the floor clear. Solid oak, walnut or ash, in 48, 60 or 72 inches."
   },
   "SD-DSK-LDG": {
     "bullets": [
@@ -92,7 +93,8 @@
       "Solid oak, walnut or ash, plant-based oil finish.",
       "The same wool felt underside and built-in cable tray as the Still Standing Desk.",
       "Weight capacity 200 lb. Price: 48 in $449 · 60 in $519."
-    ]
+    ],
+    "desc": "A solid wood desk at a fixed 29 inches, for people who sit and want it to feel like furniture rather than equipment. It has the same wool felt underside and cable tray as our standing desk, in a slimmer 28-inch depth. Oak, walnut or ash, in 48 or 60 inches."
   },
   "SD-DSK-NOK": {
     "bullets": [
@@ -100,33 +102,88 @@
       "Work surface 36 × 20 in, mounting height adjustable from 28 to 31 in.",
       "Solid oak or ash. Includes a magnetic latch and a hidden shelf for a laptop and charger.",
       "Weight capacity 40 lb on the open surface. Price $329."
-    ]
+    ],
+    "desc": "A desk for rooms that are already something else. It mounts to the wall and folds flat to 4 inches when you're done, so the corner goes back to being a corner at 6pm. There's a hidden shelf for a laptop and charger, and a magnetic latch that closes without a click. Oak or ash."
   },
   "SD-LGT-LNT": {
-    "desc": "Warm, dimmable light that goes down to 2700K, like a low lamp at dusk. One touch to dim, no app. Oak shade, steel base."
+    "desc": "Warm, dimmable light that goes down to 2700K, like a low lamp at dusk. One touch to dim, no app. Oak shade, steel base.",
+    "bullets": [
+      "Height 16 in, shade diameter 8 in",
+      "Oak shade, powder-coated steel base",
+      "Dims from 4000K to 2700K with one touch; no app",
+      "USB-C power, 6 ft cable",
+      "Warranty: 2 years"
+    ]
   },
   "SD-LGT-BAR": {
-    "desc": "Sits on top of your monitor and lights the desk without glare on the screen. USB powered. (On sale: $59, was $79.)"
+    "desc": "Sits on top of your monitor and lights the desk without glare on the screen. USB powered. (On sale: $59, was $79.)",
+    "bullets": [
+      "Length 18 in; clips onto monitors 0.4 to 1.2 in thick",
+      "Asymmetric light that lights the desk without glare on the screen",
+      "USB-C power",
+      "Warranty: 2 years"
+    ]
   },
   "SD-ACC-MAT": {
-    "desc": "Thick merino felt that quiets keyboard and mug noise. 36 × 16 in. Charcoal or moss. (On sale: $36, was $48.)"
+    "desc": "Thick merino felt that quiets keyboard and mug noise. 36 × 16 in. Charcoal or moss. (On sale: $36, was $48.)",
+    "bullets": [
+      "36 × 16 in, 5 mm thick",
+      "100% merino wool felt, non-slip underside",
+      "Charcoal or moss",
+      "Warranty: 1 year"
+    ]
   },
   "SD-ACC-SHF": {
-    "desc": "Raises your screen 4 inches to eye level, with space for a keyboard underneath. Solid oak or walnut. (On sale: $89, was $119.)"
+    "desc": "Raises your screen 4 inches to eye level, with space for a keyboard underneath. Solid oak or walnut. (On sale: $89, was $119.)",
+    "bullets": [
+      "24 × 9 in top, raises screens 4 in",
+      "Solid oak or walnut, oil finish",
+      "Holds up to 40 lb",
+      "Warranty: 1 year"
+    ]
   },
   "SD-ACC-CBL": {
-    "desc": "Steel tray that mounts under any desk and holds a power strip and spare cable. Included with the Still Standing Desk."
+    "desc": "Steel tray that mounts under any desk and holds a power strip and spare cable. Included with the Still Standing Desk.",
+    "bullets": [
+      "22 in long, powder-coated steel",
+      "Screws to the underside of any desk; holds a power strip and spare cable",
+      "Included with the Still Standing Desk",
+      "Warranty: 1 year"
+    ]
   },
   "SD-ACC-CUB": {
-    "desc": "Turn it over to start a 25, 50 or 90 minute work block. It glows once when time's up. No screen, no sound."
+    "desc": "Turn it over to start a 25, 50 or 90 minute work block. It glows once when time's up. No screen, no sound.",
+    "bullets": [
+      "2.5 in oak cube",
+      "Faces for 25, 50 and 90 minutes; flip to start",
+      "Glows once when time's up; no sound, no screen",
+      "Rechargeable, about 4 weeks per charge (USB-C)",
+      "Warranty: 1 year"
+    ]
   },
   "SD-ACC-PNL": {
-    "desc": "12 × 12 in wool panels that soften echo in a small room. Charcoal, moss or oat. (On sale: $119, was $149.)"
+    "desc": "12 × 12 in wool panels that soften echo in a small room. Charcoal, moss or oat. (On sale: $119, was $149.)",
+    "bullets": [
+      "Each panel 12 × 12 in, 0.5 in thick",
+      "Pressed wool felt; charcoal, moss or oat",
+      "Mount with the included removable strips",
+      "Warranty: 1 year"
+    ]
   },
   "SD-ACC-FTR": {
-    "desc": "A gentle rocker for under the desk, so your feet can move while you think."
+    "desc": "A gentle rocker for under the desk, so your feet can move while you think.",
+    "bullets": [
+      "18 × 12 in, curved oak base with a cork top",
+      "Rocks gently so your feet can move while you sit",
+      "Warranty: 1 year"
+    ]
   },
   "SD-ACC-PLT": {
-    "desc": "A small stoneware pot sized for a pothos or a snake plant."
+    "desc": "A small stoneware pot sized for a pothos or a snake plant.",
+    "bullets": [
+      "5 in diameter, 4.5 in tall, matte stoneware with drainage saucer",
+      "Sized for a small pothos or snake plant (plant not included)",
+      "Warranty: 1 year"
+    ]
   }
 }

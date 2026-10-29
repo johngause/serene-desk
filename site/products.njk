@@ -48,6 +48,7 @@ eleventyComputed:
         {% for w in p.widths %}<label class="opt"><input type="radio" name="width" value="{{ w.inches }}" data-price="{{ w.price }}" {% if loop.first %}checked{% endif %}><span>{{ w.inches }} in<small class="mono">{{ w.price | money }}</small></span></label>{% endfor %}
       </fieldset>
       {% endif %}
+      {% if isDesk %}<p class="widthhelp">Not sure which width? <a class="textlink" href="{{ '/guides/choosing-a-desk-width/' | url }}">Read our desk width guide</a>.</p>{% endif %}
       {% if p.finishes.length %}
       <fieldset class="optset samples" id="finishes"><legend>{% if isDesk %}Finish{% else %}Colour{% endif %}</legend>
         {% for f in p.finishes %}<label class="chip"><input type="radio" name="finish" value="{{ f.name }}" id="fin-{{ f.name }}" {% if loop.first %}checked{% endif %}><span class="sample {% if isDesk or f.name == 'oak' or f.name == 'walnut' %}wood{% else %}felt{% endif %}" style="--c:{{ f.hex }}"></span><span class="cn">{{ f.name | capitalize }}</span></label>{% endfor %}
@@ -59,7 +60,7 @@ eleventyComputed:
 
     <section class="block" aria-labelledby="desc-h">
       <h2 id="desc-h">About this {{ p.name | lower }}</h2>
-      {% if dc and dc.desc %}<p>{{ dc.desc }}</p>{% else %}<div class="pending">[COPY PENDING: product description for {{ p.name }}]</div>{% endif %}
+      {% if dc and dc.desc %}<p>{{ dc.desc }}</p>{% endif %}
     </section>
 
     {% if dc and dc.dial %}
@@ -67,14 +68,6 @@ eleventyComputed:
       <h2 id="dial-h">{{ dc.dial.title }}</h2>
       <p class="dial-sub">{{ dc.dial.intro }}</p>
       <ul class="dial-list">{% for i in dc.dial.items %}<li>{{ i | safe }}</li>{% endfor %}</ul>
-    </section>
-    {% endif %}
-
-    {% if isDesk %}
-    <section class="block" aria-labelledby="choose-h">
-      <h2 id="choose-h">Choosing a width</h2>
-      <div class="pending">[COPY PENDING: choosing a width block for {{ p.name }}]</div>
-      <p><a class="textlink" href="{{ '/guides/choosing-a-desk-width/' | url }}">Choosing a desk width: full guide</a></p>
     </section>
     {% endif %}
 
@@ -103,7 +96,6 @@ eleventyComputed:
         <tbody>{% for v in p.variants %}<tr><td class="mono">{{ v.sku }}</td><td>{% if v.width %}{{ v.width }} in{% else %}One size{% endif %}</td><td>{{ v.finish | capitalize }}</td><td class="mono">{{ v.price | money }}</td></tr>{% endfor %}</tbody>
       </table>
       {% endif %}
-      {% if not (dc and (dc.rows or dc.bullets)) %}<div class="pending">[COPY PENDING: full specifications for {{ p.name }}]</div>{% endif %}
     </section>
   </div>
 </article>
