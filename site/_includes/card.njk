@@ -1,6 +1,6 @@
 {% import "art.njk" as a %}
 <article class="prod">
-  <a class="img grain" href="{{ ('/products/' + p.slug + '/') | url }}" tabindex="-1" aria-hidden="true">
+  <a class="img grain" href="{{ ('/products/' + p.slug + '/') | url }}" aria-label="{{ p.name }}">
     {% if p.sale %}<span class="sale">SALE</span>{% endif %}
     {{ a.art(p.art) }}
   </a>

@@ -5,7 +5,7 @@
     <div class="lineart grain">{{ a.art(p.art) }}</div>
     <div><p class="name"><a href="{{ ('/products/' + p.slug + '/') | url }}">{{ p.name }}</a></p>
       <p class="sku mono">{{ p.id }}{% if p.finishes.length %} · {{ p.finishes[0].name | capitalize }}{% endif %} · Qty 1</p>
-      {% if p.sale %}<p class="saletag mono">Sale price</p>{% endif %}</div>
+      {% if p.sale %}<p class="saletag">Sale price</p>{% endif %}</div>
     <p class="price {% if p.sale %}on{% endif %}">{% if p.sale %}{{ p.sale | money }}<s><span class="vh">was </span>{{ p.price | money }}</s>{% else %}{{ p.price | money }}{% endif %}</p>
   </li>
   {% endif %}{% endfor %}
