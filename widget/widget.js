@@ -6,7 +6,7 @@
   if (!C.relayUrl) return;
   var KEY = "sd-chat", S = null, seen = {}, lastId = null;
   // a reload starts a fresh conversation (next open calls POST /session); links and the logo keep it
-  try { var nav0 = performance.getEntriesByType("navigation")[0]; if (nav0 && nav0.type === "reload") { sessionStorage.removeItem(KEY); sessionStorage.removeItem("sd-tab"); } } catch (e) {}
+  try { var nav0 = performance.getEntriesByType("navigation")[0]; if (nav0 && nav0.type === "reload") { sessionStorage.removeItem(KEY); sessionStorage.removeItem("sd-tab"); sessionStorage.removeItem("sd-open"); } } catch (e) {}
   var waiting = false, fast = false, fastStart = 0, lastNew = 0, timer = null, open = false, busy = false, backoff = 0, retried = false;
   var el = {};
 
@@ -613,16 +613,20 @@
      A keyword prefilter keeps ordinary questions off the intent route. POST /intent (Jev) says which action and cart item;
      any doubt, timeout or error sends the message to Zendesk as usual. The result is shown locally and spoken; Zendesk
      only gets a "[Site action] ..." note, which poll() hides along with the agent's replies to it. */
-  var ACT = /\b(remove|take\s+out|drop|delete|promo|code|coupon|discount)\b/i, NOTE = "[Site action] ";
+  var ACT = /\b(remove|take\s+out|drop|delete)\b|\b(apply|reapply|re-apply|try|use)\b.*\b(code|promo|coupon|discount)\b/i, NOTE = "[Site action] ";
   var hideReplies = false, unanswered = false; // unanswered: a customer message with no agent reply yet; a note after one hides nothing
   function money(n) { return "$" + (Number.isInteger(n) ? n : n.toFixed(2)); }
   function sayParts(ps) { // keep equal to sayText() in relay/worker.js, which renders the same sentences for natural voice
-    return ps.map(function (x) {
-      return x.k === "removed" ? "Done, I've removed the " + x.name + " from your cart. Your total is now " + x.total + "." :
+    var combo = ps.length > 1 && ps[0].k === "removed" && (ps[1].k === "promo_ok" || ps[1].k === "promo_fail"), total = "";
+    var out = ps.map(function (x) {
+      if (x.total) total = x.total;
+      return x.k === "removed" ? "Done, I've removed the " + x.name + " from your cart." + (combo ? "" : " Your total is now " + x.total + ".") :
         x.k === "retry" ? "You can try your code again." :
-        x.k === "promo_ok" ? "Your code SERENE10 is applied. Your total is now " + x.total + "." :
+        x.k === "promo_ok" ? "Your code SERENE10 is applied." + (combo ? "" : " Your total is now " + x.total + ".") :
         x.k === "promo_fail" ? "That code can't be applied to one or more items in your cart." : "You can try the code at checkout.";
-    }).join(" ");
+    });
+    if (combo) out.push("Your total is now " + total + ".");
+    return out.join(" ");
   }
   function intent(text, cart) { // resolves to {action, itemId} or null (never rejects)
     var t = new Promise(function (res) { setTimeout(function () { res(null); }, 1500); });
@@ -634,19 +638,20 @@
     if (!rm && !pr) return null;
     var item = rm && cart.filter(function (i) { return i.id === r.itemId; })[0];
     if (rm && (!item || (/\bsale\b/i.test(text) && cart.filter(function (i) { return i.sale; }).length > 1))) return null; // none or several
-    var parts = [], notes = [];
+    var parts = [], acts = [];
     if (rm) {
       if (!SC.remove(item.id)) return null;
       parts.push({ k: "removed", name: item.name, total: money(SC.total()) });
-      notes.push("Customer removed " + item.name + " from cart. Cart now: " + (SC.items().map(function (i) { return i.name; }).join(", ") || "empty") + ".");
+      acts.push("removed " + item.name + " from cart");
       if (!pr && SC.applyPromo) parts.push({ k: "retry" });
     }
     if (pr) {
-      if (!SC.applyPromo) { parts.push({ k: "promo_later" }); notes.push("Customer asked to apply a promo code; told to try it at checkout."); }
-      else if (SC.applyPromo()) { parts.push({ k: "promo_ok", total: money(SC.total()) }); notes.push("Customer applied promo code SERENE10: accepted, total " + money(SC.total()) + "."); }
-      else { parts.push({ k: "promo_fail" }); notes.push("Customer applied promo code: rejected (PROMO-04)."); }
+      if (!SC.applyPromo) { parts.push({ k: "promo_later" }); acts.push("told the customer to try the promo code at checkout"); }
+      else if (SC.applyPromo()) { parts.push({ k: "promo_ok", total: money(SC.total()) }); acts.push("applied SERENE10: accepted"); }
+      else { parts.push({ k: "promo_fail" }); acts.push("tried the promo code: rejected (PROMO-04)"); }
     }
-    return { parts: parts, note: NOTE + notes.join(" ") };
+    var names = SC.items().map(function (i) { return i.name; }).join(", ") || "empty";
+    return { parts: parts, note: NOTE + 'Customer asked: "' + text.replace(/"/g, "'").slice(0, 300) + '". Site ' + acts.join(" and ") + ". Cart now: " + names + ". Total " + money(SC.total()) + "." };
   }
   function send(p) {
     if (busy) return;
@@ -723,6 +728,7 @@
       var n = Date.now();
       if (got) { lastNew = n; el.typing.hidden = !waiting; note(""); }
       if (fast && (n - lastNew > C.quietMs || n - fastStart > 90000)) { fast = false; waiting = false; el.typing.hidden = true; }
+      if ((waiting || thinking) && !speaking && !queue.length && n - lastNew > 30000) { waiting = false; thinking = false; awaiting = false; el.typing.hidden = true; status(lab()); } // silent agent: back to idle/Listening
       schedule();
     }).catch(function (e) {
       if (initial || e.status === 401) return fail(e, function () { return poll(true); });
@@ -734,6 +740,7 @@
   /* ---- open / close ---- */
   function openPanel() {
     if (AC) ensureAudio();
+    try { sessionStorage.setItem("sd-open", "1"); } catch (e) {}
     open = true; el.panel.inert = false; el.panel.classList.remove("sw-out"); el.panel.hidden = false; el.launch.hidden = true;
     ensureSession().then(function () { return polled ? null : poll(false); }).then(function () {
       if (!lastId) startFast(); else schedule(); // fresh chat: poll fast so the greeting shows quickly
@@ -743,6 +750,7 @@
   }
   function closePanel() {
     if (voiceOn) voiceOff();
+    try { sessionStorage.removeItem("sd-open"); } catch (e) {}
     open = false; waiting = false; el.typing.hidden = true; clearTimeout(timer); el.panel.inert = true;
     el.launch.hidden = false; el.launch.focus();
     if (matchMedia("(prefers-reduced-motion:reduce)").matches) { el.panel.hidden = true; return; }
@@ -752,6 +760,7 @@
 
   buildUI();
   C.open = openPanel; // help page button (site.js) opens the panel
+  try { if (sessionStorage.getItem("sd-open")) openPanel(); } catch (e) {} // in-site navigation keeps the panel open
   // create the session while the page is idle so the greeting is already waiting when the panel opens
   try { if (!JSON.parse(sessionStorage.getItem(KEY) || "null")) (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(function () { ensureSession().catch(function () {}); }); } catch (e) {}
   if (TTS) { TTS.addEventListener("voiceschanged", loadVoices); loadVoices(); }

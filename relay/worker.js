@@ -76,11 +76,11 @@ function intentBody(text, items) {
   for (const i of items) criteria[i.id] = i.name + (i.sale ? " (on sale)" : "");
   criteria.none = "No single cart item is clearly meant";
   return { model: "jev-latest", state: { message: text, cart: items }, questions: {
-    action: { type: "choice", instructions: "What does the customer's message ask the shop assistant to do on the website?", criteria: {
+    action: { type: "choice", instructions: "Does the customer's message explicitly ask the shop assistant to act on the website right now? Describing a problem, error or complaint, or asking why or what something means, is NOT a request to act.", criteria: {
       remove: "Remove an item from the cart (take out, drop, delete)",
-      apply_promo: "Apply or re-try the promo code in the checkout box, without removing anything",
+      apply_promo: "An imperative request to apply, re-apply or try the promo code again, without removing anything (not merely mentioning an error or a code that fails)",
       remove_and_apply: "Both remove a cart item and apply or re-try the promo code",
-      none: "Anything else: questions, policies, delivery, product info, or no action request" } },
+      none: "Anything else: questions, problem reports, error codes, complaints, policies, delivery, product info, or no explicit action request" } },
     item: { type: "choice", instructions: "Which cart item does the customer want removed? 'the sale item' means the item marked on sale.", criteria } } };
 }
 
@@ -89,15 +89,19 @@ const NAME = /^[A-Za-z0-9 '&.-]{1,60}$/, MONEY = /^\$\d{1,6}(\.\d{2})?$/;
 function sayText(parts) {
   if (!parts.length || parts.length > 3) return "";
   const out = [];
+  const combo = parts.length > 1 && parts[0]?.k === "removed" && (parts[1]?.k === "promo_ok" || parts[1]?.k === "promo_fail");
+  let total = "";
   for (const x of parts) {
+    if (combo && x?.total && MONEY.test(x.total)) total = x.total;
     if (!x || typeof x !== "object") return "";
-    if (x.k === "removed" && NAME.test(x.name) && MONEY.test(x.total)) out.push(`Done, I've removed the ${x.name} from your cart. Your total is now ${x.total}.`);
+    if (x.k === "removed" && NAME.test(x.name) && MONEY.test(x.total)) out.push(`Done, I've removed the ${x.name} from your cart.${combo ? "" : ` Your total is now ${x.total}.`}`);
     else if (x.k === "retry") out.push("You can try your code again.");
-    else if (x.k === "promo_ok" && MONEY.test(x.total)) out.push(`Your code SERENE10 is applied. Your total is now ${x.total}.`);
+    else if (x.k === "promo_ok" && MONEY.test(x.total)) out.push(`Your code SERENE10 is applied.${combo ? "" : ` Your total is now ${x.total}.`}`);
     else if (x.k === "promo_fail") out.push("That code can't be applied to one or more items in your cart.");
     else if (x.k === "promo_later") out.push("You can try the code at checkout.");
     else return "";
   }
+  if (combo) { if (!total) return ""; out.push(`Your total is now ${total}.`); }
   return out.join(" ");
 }
 
