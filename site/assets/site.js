@@ -340,13 +340,15 @@
     d.querySelectorAll(".errx").forEach(function (b) { b.addEventListener("click", function () { var pc = d.getElementById("promo-code"); if (b.dataset.clear && pc) { pc.value = ""; pc.focus(); } errs.forEach(function (e) { e.classList.remove("on"); }); }); });
     var order = d.getElementById("order"), promo = d.getElementById("promo");
     // SERENE10 only when every line is full price; anything else (SPRINGQUIET, unknown) is PROMO-04. One code per order.
-    var applyPromo = function () {
-      var code = (d.getElementById("promo-code").value || "").trim().toUpperCase(), cart = readCart() || presetCart();
+    var applyPromo = function (given) {
+      var code = (given != null ? given : d.getElementById("promo-code").value || "").trim().toUpperCase(), cart = readCart() || presetCart();
       promoOn = code === "SERENE10" && cart.length > 0 && !cart.some(function (l) { return cat[l.id] && cat[l.id].sale; });
       draw(); if (promoOn) clearErrs(); else show("PROMO-04");
     };
     if (order) order.addEventListener("submit", function (e) {
       e.preventDefault();
+      var cart0 = readCart() || presetCart(); if (!cart0.length) return; // empty cart: nothing to order
+      if (promoOn && cart0.some(function (l) { return cat[l.id] && cat[l.id].sale; })) { promoOn = false; draw(); return show("PROMO-04"); }
       if (q && d.getElementById("err-" + q) && q !== "PROMO-04") return show(q);
       var zip = (d.getElementById("co-zip").value || "").trim();
       if (zip === "00000") return show("PAY-201");
@@ -357,9 +359,10 @@
       d.querySelector(".co-grid").hidden = true; d.getElementById("confirmed").hidden = false;
       d.querySelector(".checkout h1").textContent = "Order placed"; d.getElementById("confirmed").focus();
     });
+    window.addEventListener("pageshow", function (e) { if (e.persisted) { draw(); } });
     if (promo) promo.addEventListener("submit", function (e) { e.preventDefault(); applyPromo(); });
     // the form's GET fallback (script late or cached) lands here with ?promo=: show the same error, then drop the param so a reload is clean
-    if (promo && new URLSearchParams(location.search).has("promo")) { applyPromo(); try { var u = new URLSearchParams(location.search); u.delete("promo"); history.replaceState(null, "", location.pathname + (u.toString() ? "?" + u : "") + location.hash); } catch (e) {} }
+    if (promo && new URLSearchParams(location.search).has("promo")) { applyPromo(new URLSearchParams(location.search).get("promo")); try { var u = new URLSearchParams(location.search); u.delete("promo"); history.replaceState(null, "", location.pathname + (u.toString() ? "?" + u : "") + location.hash); } catch (e) {} }
   }
 
   /* ---- help page: open whichever widget is present ---- */
