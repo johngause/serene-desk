@@ -277,6 +277,7 @@
     var siteBase = lines.querySelector("a") ? lines.querySelector("a").getAttribute("href").replace(/products\/[^/]+\/$/, "") : "/";
     var rest = d.getElementById("restore"), skus = {};
     lines.querySelectorAll("li[data-id]").forEach(function (li) { skus[li.dataset.id] = li.querySelector(".sku").textContent.replace(/ · Qty \d+$/, ""); });
+    var promoOn = false, promoDropped = false; // SERENE10 applied (memory only); dropped = a sale item arrived after it
     var draw = function () {
       var cart = readCart(), total = 0;
       if (!cart) { cart = presetCart(); }
@@ -301,6 +302,13 @@
       d.querySelectorAll(".totals").forEach(function (e) { e.hidden = !cart.length; });
       setBadge(cart);
       d.querySelectorAll(".subtotal").forEach(function (e) { e.textContent = money(total); });
+      if (promoOn && cart.some(function (l) { return cat[l.id] && cat[l.id].sale; })) { promoOn = false; promoDropped = true; }
+      d.querySelectorAll(".totals .promo-rows").forEach(function (e) { e.remove(); });
+      if (promoOn) { // 10% off; cents shown only when needed
+        var off = Math.round(total * 10) / 100, tt = d.querySelector(".co-sum .totals");
+        var m2 = function (n) { return "$" + (Number.isInteger(n) ? n : n.toFixed(2)); };
+        if (tt) tt.insertAdjacentHTML("beforeend", '<div class="promo-rows"><dt>SERENE10 (10% off)</dt><dd class="mono">−' + m2(off) + '</dd></div><div class="promo-rows"><dt>Total</dt><dd class="mono">' + m2(Math.round((total - off) * 100) / 100) + '</dd></div>');
+      }
       if (rest) rest.hidden = false;
     };
     // the prices on the page are read from the catalog (built from products.json), never typed here
@@ -312,7 +320,7 @@
       var again = lines.querySelector('li[data-i="' + Math.min(i, lines.children.length - 1) + '"] ' + (b.dataset.rm ? "" : 'button[data-d="' + b.dataset.d + '"]'));
       if (again) again.focus(); else if (rest) rest.focus();
     });
-    if (rest) rest.addEventListener("click", function () { var pc = d.getElementById("promo-code"); if (pc) pc.value = "SERENE10"; saveCart(null); draw(); onCartChange(); });
+    if (rest) rest.addEventListener("click", function () { var pc = d.getElementById("promo-code"); if (pc) pc.value = "SERENE10"; promoOn = false; saveCart(null); draw(); onCartChange(); });
     if (readCart()) draw(); else if (rest) { rest.hidden = false; draw(); }
   }
 
@@ -325,16 +333,36 @@
     };
     var q = new URLSearchParams(location.search).get("error"), q0 = function () { return q; };
     var clearErrs = function () { errs.forEach(function (e) { e.classList.remove("on"); }); };
-    onCartChange = clearErrs; // changing the cart clears any error
+    onCartChange = function () { clearErrs(); if (promoDropped) { promoDropped = false; show("PROMO-04"); } }; // changing the cart clears any error; a dropped code says why
     // errors never persist: drop a stale #err- hash (it would re-show the box on reload) unless ?error= asks for one
     if (/^#err-/.test(location.hash) && !q0()) try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     if (q && d.getElementById("err-" + q)) show(q);
     d.querySelectorAll(".errx").forEach(function (b) { b.addEventListener("click", function () { var pc = d.getElementById("promo-code"); if (b.dataset.clear && pc) { pc.value = ""; pc.focus(); } errs.forEach(function (e) { e.classList.remove("on"); }); }); });
     var order = d.getElementById("order"), promo = d.getElementById("promo");
-    if (order) order.addEventListener("submit", function (e) { e.preventDefault(); show(q && d.getElementById("err-" + q) && q !== "PROMO-04" ? q : "PAY-201"); });
-    if (promo) promo.addEventListener("submit", function (e) { e.preventDefault(); show("PROMO-04"); });
+    // SERENE10 only when every line is full price; anything else (SPRINGQUIET, unknown) is PROMO-04. One code per order.
+    var applyPromo = function (given) {
+      var code = (given != null ? given : d.getElementById("promo-code").value || "").trim().toUpperCase(), cart = readCart() || presetCart();
+      promoOn = code === "SERENE10" && cart.length > 0 && !cart.some(function (l) { return cat[l.id] && cat[l.id].sale; });
+      draw(); if (promoOn) clearErrs(); else show("PROMO-04");
+    };
+    if (order) order.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var cart0 = readCart() || presetCart(); if (!cart0.length) return; // empty cart: nothing to order
+      if (promoOn && cart0.some(function (l) { return cat[l.id] && cat[l.id].sale; })) { promoOn = false; draw(); return show("PROMO-04"); }
+      if (q && d.getElementById("err-" + q) && q !== "PROMO-04") return show(q);
+      var zip = (d.getElementById("co-zip").value || "").trim();
+      if (zip === "00000") return show("PAY-201");
+      if (!/^\d{5}(-\d{4})?$/.test(zip)) return show("ADDR-12");
+      var n = "SD-2" + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+      saveCart([]); promoOn = false; draw(); clearErrs();
+      d.getElementById("conf-no").textContent = n;
+      d.querySelector(".co-grid").hidden = true; d.getElementById("confirmed").hidden = false;
+      d.querySelector(".checkout h1").textContent = "Order placed"; d.getElementById("confirmed").focus();
+    });
+    window.addEventListener("pageshow", function (e) { if (e.persisted) { draw(); } });
+    if (promo) promo.addEventListener("submit", function (e) { e.preventDefault(); applyPromo(); });
     // the form's GET fallback (script late or cached) lands here with ?promo=: show the same error, then drop the param so a reload is clean
-    if (promo && new URLSearchParams(location.search).has("promo")) { show("PROMO-04"); try { var u = new URLSearchParams(location.search); u.delete("promo"); history.replaceState(null, "", location.pathname + (u.toString() ? "?" + u : "") + location.hash); } catch (e) {} }
+    if (promo && new URLSearchParams(location.search).has("promo")) { applyPromo(new URLSearchParams(location.search).get("promo")); try { var u = new URLSearchParams(location.search); u.delete("promo"); history.replaceState(null, "", location.pathname + (u.toString() ? "?" + u : "") + location.hash); } catch (e) {} }
   }
 
   /* ---- help page: open whichever widget is present ---- */

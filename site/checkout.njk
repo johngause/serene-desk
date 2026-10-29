@@ -6,6 +6,7 @@ description: Checkout for your Serene Desk order.
 ---
 <section class="gut checkout"><div class="wrap">
   <h1>Checkout</h1>
+  <div id="confirmed" tabindex="-1" hidden><p>Confirmation sent to your email.</p><p class="mono">Order number <span id="conf-no"></span></p></div>
   <div class="co-grid">
     <form class="co-form" id="order" method="get" action="{{ '/checkout/' | url }}#err-PAY-201" novalidate>
       <div class="errors" id="errors">
