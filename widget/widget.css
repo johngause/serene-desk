@@ -1,9 +1,13 @@
 /* Serene Desk chat widget. Tokens come from site.css (:root). */
 .sw{position:fixed;right:20px;bottom:20px;z-index:40;font:400 14px/1.45 var(--body)}
-.sw-launch{width:60px;height:60px;border-radius:50%;border:1px solid var(--line);background:var(--slate);cursor:pointer;padding:0;display:grid;place-items:center;box-shadow:0 0 0 6px rgba(243,194,107,.12),0 0 34px rgba(243,194,107,.4),0 10px 30px rgba(0,0,0,.4)}
+.sw-launch{width:60px;height:60px;border-radius:50%;border:1px solid var(--line);background:var(--slate);cursor:pointer;padding:0;display:grid;place-items:center;box-shadow:0 0 0 6px rgba(243,194,107,.1),0 0 26px rgba(243,194,107,.26),0 10px 30px rgba(0,0,0,.4);transition:box-shadow .6s ease}
 .sw-launch img{width:46px;height:46px;border-radius:50%;display:block}
-.sw-launch:hover{box-shadow:0 0 0 7px rgba(243,194,107,.2),0 0 42px rgba(243,194,107,.55),0 10px 30px rgba(0,0,0,.4)}
-.sw-panel{position:absolute;right:0;bottom:0;width:360px;max-width:calc(100vw - 40px);background:var(--slate);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden;display:flex;flex-direction:column;color:var(--mist)}
+.sw-launch:hover{box-shadow:0 0 0 7px rgba(243,194,107,.16),0 0 34px rgba(243,194,107,.4),0 10px 30px rgba(0,0,0,.4)}
+.sw-panel{position:absolute;right:0;bottom:0;width:360px;max-width:calc(100vw - 40px);background:var(--slate);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden;display:flex;flex-direction:column;color:var(--mist);animation:sw-in .22s var(--ease);transform-origin:100% 100%}
+.sw-panel.sw-out{animation:sw-out .15s ease-in forwards}
+@keyframes sw-in{from{opacity:0;transform:translateY(12px) scale(.96)}}
+@keyframes sw-out{to{opacity:0;transform:translateY(8px) scale(.97)}}
+@media (prefers-reduced-motion:reduce){.sw-panel{animation:none}.sw-launch{transition:none}}
 .sw-panel[hidden],.sw-launch[hidden],.sw-typing[hidden]{display:none}
 .sw-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
 .sw-av{width:32px;height:32px;border-radius:50%;box-shadow:0 0 0 1px var(--line),0 0 18px rgba(243,194,107,.35)}
@@ -11,7 +15,8 @@
 .sw-head small{display:block;color:var(--fog);font-size:12px;line-height:1.2}
 .sw-x{margin-left:auto;width:32px;height:32px;border:0;border-radius:50%;background:none;color:var(--fog);font-size:20px;cursor:pointer}
 .sw-x:hover{color:var(--mist)}
-.sw-log{padding:14px;display:flex;flex-direction:column;gap:10px;height:min(380px,50vh);overflow-y:auto}
+.sw-log>:first-child{margin-top:auto}
+.sw-log{padding:14px;display:flex;flex-direction:column;gap:10px;height:min(270px,32vh);overflow-y:auto}
 .sw-m{max-width:86%;padding:9px 12px;border-radius:14px;overflow-wrap:anywhere}
 .sw-m p{margin:0}.sw-m p+p{margin-top:6px}
 .sw-bot{background:var(--dusk);border-bottom-left-radius:4px;align-self:flex-start}
@@ -31,6 +36,7 @@
 @keyframes sw-b{0%,60%,100%{opacity:.3}30%{opacity:1}}
 .sw-form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);align-items:center}
 .sw-in{flex:1;min-width:0;background:var(--dusk);border:1px solid transparent;border-radius:999px;padding:9px 14px;color:var(--mist);font:inherit}
+.sw-in:focus-visible{outline:none;border-color:var(--sage);box-shadow:0 0 0 1px var(--sage)}
 .sw-in::placeholder{color:var(--fog)}
 .sw-send{border:0;border-radius:999px;background:var(--lamp);color:var(--dusk);font:600 14px var(--body);padding:9px 16px;cursor:pointer}
 .sw-send:disabled{opacity:.5;cursor:default}
