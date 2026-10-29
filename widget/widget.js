@@ -186,8 +186,8 @@
   function sentences(t) { // Chrome cuts long utterances (~15 s): browser voice speaks by sentence
     return (t.match(/[^.!?\n]+[.!?]*/g) || []).map(function (x) { return x.trim(); }).filter(function (x) { return /\w/.test(x); }).map(function (x) { return { t: x }; });
   }
-  function speakText(t, id) { // natural voice: one item per message (relay /tts); browser voice: sentences
-    if (vmode === "natural" && id) queue.push({ t: t, id: id, t0: performance.now() });
+  function speakText(t, id, say) { // natural voice: one item per message (relay /tts; `say` = site-action parts the relay renders itself); browser voice: sentences
+    if (vmode === "natural" && id) queue.push({ t: t, id: id, say: say, t0: performance.now() });
     else queue = queue.concat(sentences(t));
     next();
   }
@@ -236,7 +236,7 @@
       if (aud.currentTime !== lastT || aud.paused) { lastT = aud.currentTime; lastAt = n; } else if (n - lastAt > 4000) mine.bad();
     }, 500);
     fetch(C.relayUrl + "/tts", { method: "POST", headers: { "Content-Type": "application/json" }, signal: mine.ctl.signal,
-      body: JSON.stringify(auth({ messageId: it.id })) }).then(function (r) {
+      body: JSON.stringify(auth(it.say ? { say: it.say } : { messageId: it.id })) }).then(function (r) {
       if (pl !== mine) return;
       if (!r.ok || !r.body) throw new Error("tts");
       wireAudio();
@@ -609,7 +609,65 @@
     note("Connection problem. Please try again.");
   }
 
+  /* ---- site actions (config siteActions): "remove the mat", "try the code again". Prototype, not Zendesk functionality. ----
+     A keyword prefilter keeps ordinary questions off the intent route. POST /intent (Jev) says which action and cart item;
+     any doubt, timeout or error sends the message to Zendesk as usual. The result is shown locally and spoken; Zendesk
+     only gets a "[Site action] ..." note, which poll() hides along with the agent's replies to it. */
+  var ACT = /\b(remove|take\s+out|drop|delete|promo|code|coupon|discount)\b/i, NOTE = "[Site action] ";
+  var hideReplies = false, unanswered = false; // unanswered: a customer message with no agent reply yet; a note after one hides nothing
+  function money(n) { return "$" + (Number.isInteger(n) ? n : n.toFixed(2)); }
+  function sayParts(ps) { // keep equal to sayText() in relay/worker.js, which renders the same sentences for natural voice
+    return ps.map(function (x) {
+      return x.k === "removed" ? "Done, I've removed the " + x.name + " from your cart. Your total is now " + x.total + "." :
+        x.k === "retry" ? "You can try your code again." :
+        x.k === "promo_ok" ? "Your code SERENE10 is applied. Your total is now " + x.total + "." :
+        x.k === "promo_fail" ? "That code can't be applied to one or more items in your cart." : "You can try the code at checkout.";
+    }).join(" ");
+  }
+  function intent(text, cart) { // resolves to {action, itemId} or null (never rejects)
+    var t = new Promise(function (res) { setTimeout(function () { res(null); }, 1500); });
+    var q = ensureSession().then(function () { return call("POST", "/intent", auth({ text: text, cartItems: cart })); }).catch(function () { return null; });
+    return Promise.race([q, t]);
+  }
+  function runAction(r, cart, text) { // performs the page actions; returns {parts, note} or null when this is not a clean single-item request
+    var SC = window.SereneCart, rm = r.action === "remove" || r.action === "remove_and_apply", pr = r.action === "apply_promo" || r.action === "remove_and_apply";
+    if (!rm && !pr) return null;
+    var item = rm && cart.filter(function (i) { return i.id === r.itemId; })[0];
+    if (rm && (!item || (/\bsale\b/i.test(text) && cart.filter(function (i) { return i.sale; }).length > 1))) return null; // none or several
+    var parts = [], notes = [];
+    if (rm) {
+      if (!SC.remove(item.id)) return null;
+      parts.push({ k: "removed", name: item.name, total: money(SC.total()) });
+      notes.push("Customer removed " + item.name + " from cart. Cart now: " + (SC.items().map(function (i) { return i.name; }).join(", ") || "empty") + ".");
+      if (!pr && SC.applyPromo) parts.push({ k: "retry" });
+    }
+    if (pr) {
+      if (!SC.applyPromo) { parts.push({ k: "promo_later" }); notes.push("Customer asked to apply a promo code; told to try it at checkout."); }
+      else if (SC.applyPromo()) { parts.push({ k: "promo_ok", total: money(SC.total()) }); notes.push("Customer applied promo code SERENE10: accepted, total " + money(SC.total()) + "."); }
+      else { parts.push({ k: "promo_fail" }); notes.push("Customer applied promo code: rejected (PROMO-04)."); }
+    }
+    return { parts: parts, note: NOTE + notes.join(" ") };
+  }
   function send(p) {
+    if (busy) return;
+    var SC = window.SereneCart, cart = C.siteActions && p.text && SC && ACT.test(p.text) ? SC.items() : null;
+    if (!cart || !cart.length) return doSend(p);
+    var pend = waiting; // an ordinary question is still awaiting its answer: leave its dots and thinking state alone
+    busy = true; el.send.disabled = true; waiting = true; el.typing.hidden = false; hush = false;
+    if (voiceOn) { ensureAudio(); if (speaking || queue.length) stopSpeech(); thinking = true; status(lab()); }
+    intent(p.text, cart).then(function (r) {
+      var res = null;
+      try { res = r && runAction(r, cart, p.text); } catch (e) { res = null; }
+      busy = false; el.send.disabled = false; waiting = pend; el.typing.hidden = !pend;
+      if (!res) { if (!pend) thinking = false; return doSend(p); } // normal Zendesk path
+      el.input.value = ""; if (!pend) { awaiting = false; thinking = false; }
+      addMsg({ role: "user", text: p.text });
+      addMsg({ role: "agent", text: sayParts(res.parts) });
+      if (voiceOn) { dropPend(); speakText(sayParts(res.parts), "act", res.parts); } else status(lab());
+      ensureSession().then(function () { return call("POST", "/message", auth({ text: res.note })); }).catch(function () {}); // note only; failure is harmless
+    });
+  }
+  function doSend(p) {
     if (busy) return;
     if (voiceOn) ensureAudio();
     busy = true; el.send.disabled = true; waiting = true;
@@ -627,7 +685,7 @@
     }).catch(function (e) {
       tmp.remove(); clearEcho(false); thinking = false; waiting = false; el.typing.hidden = true;
       if (p.text && e.status !== 401 && !el.input.value) el.input.value = p.text;
-      fail(e, function () { busy = false; el.send.disabled = false; send(p); });
+      fail(e, function () { busy = false; el.send.disabled = false; doSend(p); });
     }).then(function () { busy = false; el.send.disabled = false; });
   }
 
@@ -650,6 +708,10 @@
       (r.messages || []).forEach(function (m) {
         if (seen[m.id]) return;
         seen[m.id] = 1; lastId = m.id;
+        // a "[Site action]" note and the agent's replies to it stay out of the transcript, until the customer's next message
+        if (m.role === "user") { if ((m.text || "").indexOf(NOTE) === 0) { hideReplies = !unanswered; return; } hideReplies = false; unanswered = true; }
+        else if (hideReplies) return;
+        else if (!isStall(m)) unanswered = false;
         if (m.role === "user") { // server echo replaces the optimistic copy
           var o = el.log.querySelector('.sw-me[data-opt="1"]');
           if (awaitEcho && (m.text || "").trim() === echoFor) clearEcho(false);

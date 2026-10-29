@@ -69,6 +69,38 @@ function normalize(m) {
   return { id: m.id, role, text: c.text || c.altText || "", options, received: m.received, citations };
 }
 
+// Jev request for POST /intent: two parallel choice questions over the message and the cart (api.typesafe.ai/v1/systemone).
+// Kept equal to tools/intent-probe.mjs.
+function intentBody(text, items) {
+  const criteria = {};
+  for (const i of items) criteria[i.id] = i.name + (i.sale ? " (on sale)" : "");
+  criteria.none = "No single cart item is clearly meant";
+  return { model: "jev-latest", state: { message: text, cart: items }, questions: {
+    action: { type: "choice", instructions: "What does the customer's message ask the shop assistant to do on the website?", criteria: {
+      remove: "Remove an item from the cart (take out, drop, delete)",
+      apply_promo: "Apply or re-try the promo code in the checkout box, without removing anything",
+      remove_and_apply: "Both remove a cart item and apply or re-try the promo code",
+      none: "Anything else: questions, policies, delivery, product info, or no action request" } },
+    item: { type: "choice", instructions: "Which cart item does the customer want removed? 'the sale item' means the item marked on sale.", criteria } } };
+}
+
+// Spoken site-action replies. Keep equal to the on-screen text in widget/widget.js (sayParts).
+const NAME = /^[A-Za-z0-9 '&.-]{1,60}$/, MONEY = /^\$\d{1,6}(\.\d{2})?$/;
+function sayText(parts) {
+  if (!parts.length || parts.length > 3) return "";
+  const out = [];
+  for (const x of parts) {
+    if (!x || typeof x !== "object") return "";
+    if (x.k === "removed" && NAME.test(x.name) && MONEY.test(x.total)) out.push(`Done, I've removed the ${x.name} from your cart. Your total is now ${x.total}.`);
+    else if (x.k === "retry") out.push("You can try your code again.");
+    else if (x.k === "promo_ok" && MONEY.test(x.total)) out.push(`Your code SERENE10 is applied. Your total is now ${x.total}.`);
+    else if (x.k === "promo_fail") out.push("That code can't be applied to one or more items in your cart.");
+    else if (x.k === "promo_later") out.push("You can try the code at checkout.");
+    else return "";
+  }
+  return out.join(" ");
+}
+
 export default {
   async fetch(req, env) {
     const origin = req.headers.get("Origin") || "";
@@ -104,7 +136,7 @@ export default {
         if (!p || typeof p !== "object" || Array.isArray(p)) return fail(400, "json object required", "validate", cors);
       }
       else if (req.method === "GET" && pathname === "/messages") p = Object.fromEntries(searchParams);
-      else if (req.method === "POST" && pathname === "/tts") {
+      else if (req.method === "POST" && (pathname === "/tts" || pathname === "/intent")) {
         p = await req.json().catch(() => null);
         if (!p || typeof p !== "object" || Array.isArray(p)) return fail(400, "json object required", "validate", cors);
       }
@@ -114,6 +146,28 @@ export default {
       if (!conversationId || !userId || !token || !same(token, await sign(env, conversationId, userId)))
         return fail(401, "bad token", "auth", cors);
 
+      if (pathname === "/intent") {
+        const items = p.cartItems, msg = p.text;
+        if (typeof msg !== "string" || !msg.trim() || msg.length > 300 || !Array.isArray(items) || !items.length || items.length > 20 ||
+          !items.every((i) => i && typeof i.id === "string" && /^[\w-]{1,40}$/.test(i.id) && typeof i.name === "string" && i.name.length > 0 && i.name.length <= 60 && typeof i.sale === "boolean"))
+          return fail(400, "text and cartItems required", "validate", cors);
+        const ih = (ttsHits.get("i:" + conversationId) || []).filter((t) => now - t < 60000);
+        if (ih.length >= 20) return fail(429, "rate limited", "limit", cors);
+        ih.push(now); ttsHits.set("i:" + conversationId, ih);
+        if (!env.TYPESAFE_API_KEY) return fail(500, "intent not configured", "intent", cors);
+        const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 2500);
+        let r;
+        try { r = await fetch("https://api.typesafe.ai/v1/systemone", { method: "POST", signal: ctl.signal,
+          headers: { Authorization: "Bearer " + env.TYPESAFE_API_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify(intentBody(msg.trim(), items)) }); } catch { return fail(502, "intent unreachable", "intent", cors); }
+        finally { clearTimeout(to); }
+        if (!r.ok) return fail(502, `intent ${r.status}`, "intent", cors);
+        const a = (await r.json().catch(() => ({}))).answers || {};
+        const act = a.action?.confidence >= 0.6 ? a.action.choice : "none";
+        const it = a.item?.confidence >= 0.6 && items.some((i) => i.id === a.item.choice) ? a.item.choice : null;
+        return json({ action: ["remove", "apply_promo", "remove_and_apply"].includes(act) ? act : "none", itemId: it }, 200, cors);
+      }
+
       if (pathname === "/tts") {
         const th = (ttsHits.get(conversationId) || []).filter((t) => now - t < 60000);
         if (th.length >= 20) return fail(429, "rate limited", "limit", cors);
@@ -121,7 +175,10 @@ export default {
         if (ttsHits.size > 1000) for (const [k, v] of ttsHits) if (now - v[v.length - 1] >= 60000) ttsHits.delete(k);
         if (!env.ELEVENLABS_API_KEY) return fail(500, "tts not configured", "tts", cors);
         let text = FILLER;
-        if (p.filler !== true) {
+        if (Array.isArray(p.say)) { // site-action result: rendered from fixed templates; only a short item name and a dollar amount come from the client
+          text = sayText(p.say);
+          if (!text) return fail(400, "bad say", "validate", cors);
+        } else if (p.filler !== true) {
           if (typeof p.messageId !== "string" || !p.messageId) return fail(400, "messageId or filler required", "validate", cors);
           const list = (await zd(env, "GET", `/conversations/${conversationId}/messages`, null, "list messages")).messages || [];
           const m = list.find((x) => x.id === p.messageId);
