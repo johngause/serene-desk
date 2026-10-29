@@ -51,6 +51,13 @@ function splitSources(t) {
   return { body: t, citations };
 }
 
+// Speech copy: drop everything from the last "Sources:" heading, even if the block doesn't parse as citations.
+function cutSources(t) {
+  let at = -1;
+  for (const k of t.matchAll(/(^|\n)[ \t]*Sources?:/gi)) at = k.index;
+  return at >= 0 ? t.slice(0, at) : t;
+}
+
 // AI agent = business author whose source.type is "ultimate"; any other business author is a human.
 function normalize(m) {
   const c = m.content || {};
@@ -112,20 +119,22 @@ export default {
         if (th.length >= 20) return fail(429, "rate limited", "limit", cors);
         th.push(now); ttsHits.set(conversationId, th);
         if (ttsHits.size > 1000) for (const [k, v] of ttsHits) if (now - v[v.length - 1] >= 60000) ttsHits.delete(k);
+        if (!env.ELEVENLABS_API_KEY) return fail(500, "tts not configured", "tts", cors);
         let text = FILLER;
-        if (!p.filler) {
+        if (p.filler !== true) {
           if (typeof p.messageId !== "string" || !p.messageId) return fail(400, "messageId or filler required", "validate", cors);
           const list = (await zd(env, "GET", `/conversations/${conversationId}/messages`, null, "list messages")).messages || [];
           const m = list.find((x) => x.id === p.messageId);
           const n = m && normalize(m);
           if (!n || n.role === "user" || !n.text) return fail(404, "message not found", "tts", cors);
-          text = splitSources(n.text).body.replace(/https?:\/\/\S+/g, "").replace(/[*_`#]+/g, "").replace(/\s+/g, " ").trim().slice(0, 1500);
+          text = cutSources(n.text).replace(/https?:\/\/\S+/g, "").replace(/[*_`#]+/g, "").replace(/\s+/g, " ").trim().slice(0, 1500);
           if (!text) return fail(404, "message not found", "tts", cors);
         }
-        const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${env.ELEVENLABS_VOICE_ID}/stream?output_format=mp3_44100_128`, {
+        let r;
+        try { r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${env.ELEVENLABS_VOICE_ID}/stream?output_format=mp3_44100_128`, {
           method: "POST", headers: { "xi-api-key": env.ELEVENLABS_API_KEY, "Content-Type": "application/json" },
           body: JSON.stringify({ text, model_id: env.ELEVENLABS_MODEL }),
-        });
+        }); } catch { return fail(502, "elevenlabs unreachable", "tts", cors); }
         if (!r.ok || !r.body) return fail(502, `elevenlabs ${r.status}`, "tts", cors);
         return new Response(r.body, { status: 200, headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store", ...cors } });
       }

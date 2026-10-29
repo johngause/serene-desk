@@ -68,3 +68,5 @@
 .sw-voice .sw-log{height:min(200px,30vh)}
 .sw-voice .sw-typing{display:none}
 @media (prefers-reduced-motion:reduce){.sw-viz canvas{opacity:.55;transition:opacity .6s}.sw-viz[data-s="speaking"] canvas{opacity:1}}
+
+.sw-menu label[hidden]{display:none}
