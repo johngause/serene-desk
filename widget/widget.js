@@ -15,11 +15,11 @@
      Chat tab = silent text; Voice tab = ring + hands-free. The mic button there only mutes; Stop is the only interrupt. ---- */
   var SR = window.webkitSpeechRecognition || window.SpeechRecognition, TTS = window.speechSynthesis;
   var voiceOn = false, rec = null, recRun = false, speaking = false, queue = [], cur = "", curUtt = null;
-  var pend = "", pendItm = "", pauseT = null, fillerT = null, restartT = null, fails = 0, recent = "", endAt = 0, awaiting = false, voices = [], voiceName = "", VKEY = "sd-voice";
+  var pend = "", pendItm = "", pauseT = null, fillerT = null, restartT = null, fails = 0, recent = "", endAt = 0, awaiting = false, voices = [], voiceName = "", VKEY = "sd-voice", MKEY = "sd-vmode", vmode = "natural";
   // half-duplex: no recognition while Wren speaks (+ TAIL after).
   var TAIL = 600, muted = false, TABK = "sd-tab";
   var echoT = null, echoFor = "", held = [], hush = false, awaitEcho = false, thinking = false, quiet = false, polled = false;
-  try { voiceName = localStorage.getItem(VKEY) || ""; } catch (e) {}
+  try { voiceName = localStorage.getItem(VKEY) || ""; vmode = localStorage.getItem(MKEY) === "browser" ? "browser" : "natural"; } catch (e) {}
   function lab() { return speaking ? (C.agentName || "Wren") + " is speaking" : thinking ? "Thinking" : muted ? (C.agentName || "Wren") + " can't hear you" : "Listening"; }
   function status(t) {
     if (el.status) el.status.textContent = t;
@@ -47,7 +47,21 @@
     COL = { lamp: g("--lamp", "F3C26B"), sage: g("--sage", "9DB4A3"), mist: g("--mist", "E3E7EA"), oak: g("--oak", "C99A68"), slate: g("--slate", "28323E"), deep: g("--deep", "171D25"), line: g("--line", "3A4756") };
   }
   function vizKick(k) { kick = Math.max(kick, k); sylT = 1e9; } // new syllable on the next frame
+  function vizReal(dt) { // frequency bins -> spectrum, RMS -> amplitude (natural voice)
+    var on = ana && aud && !aud.paused && !aud.ended && pl && pl.started, a = 0;
+    if (on) {
+      ana.getByteFrequencyData(fbin); ana.getByteTimeDomainData(tbin);
+      var sum = 0; for (var k = 0; k < tbin.length; k++) { var d = (tbin[k] - 128) / 128; sum += d * d; }
+      a = Math.min(1, Math.sqrt(sum / tbin.length) * 4);
+    }
+    for (var i = 0; i < VN; i++) {
+      var v = on ? Math.min(1, fbin[i + 1] / 255 * 1.25) : 0;
+      spec[i] += (v - spec[i]) * (v > spec[i] ? 0.6 : 0.25);
+    }
+    vamp += (a - vamp) * (a > vamp ? 0.6 : 0.3);
+  }
   function vizVoice(dt, t) {
+    if (real && ana) return vizReal(dt);
     var a = 0;
     if (speaking) {
       sylT += dt;
@@ -158,33 +172,101 @@
       el.voiceSel.appendChild(o);
     });
   }
-  function speakText(t) { // Chrome cuts long utterances (~15 s): queue by sentence
-    (t.match(/[^.!?\n]+[.!?]*/g) || []).forEach(function (x) { x = x.trim(); if (/\w/.test(x)) queue.push(x); });
+  function sentences(t) { // Chrome cuts long utterances (~15 s): browser voice speaks by sentence
+    return (t.match(/[^.!?\n]+[.!?]*/g) || []).map(function (x) { return x.trim(); }).filter(function (x) { return /\w/.test(x); }).map(function (x) { return { t: x }; });
+  }
+  function speakText(t, id, filler) { // natural voice: one item per message (relay /tts); browser voice: sentences
+    if (vmode === "natural" && (id || filler)) queue.push({ t: t, id: id, filler: filler, t0: performance.now() });
+    else queue = queue.concat(sentences(t));
     next();
   }
-  function next() {
-    if (!voiceOn || speaking) return;
-    if (!queue.length) { status(lab()); return; }
-    clearTimeout(restartT);
-    cur = queue.shift(); speaking = true; thinking = false; vizKick(1); status(lab()); // ring moves at speak(), not when audio starts
-    dropPend();
-    if (recRun) { try { rec.abort(); } catch (e) {} } // half-duplex: stop listening while Wren talks
-    var u = new SpeechSynthesisUtterance(cur), v = pickVoice();
-    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
-    var done = function () {
-      if (curUtt !== u) return; curUtt = null; speaking = false; recent = cur; endAt = Date.now(); cur = "";
-      if (queue.length) return next();
-      status(lab());
-      clearTimeout(restartT); restartT = setTimeout(startRec, TAIL + 30);
+  /* natural voice: POST /tts streams audio/mpeg into a MediaSource feeding one <audio> that runs through an AnalyserNode
+     (the ring reads real data). Any failure before audio starts falls back to the browser voice for that message. */
+  var aud = null, actx = null, ana = null, srcNode = null, pl = null, gen = 0, real = false, fbin = null, tbin = null;
+  var AC = window.AudioContext || window.webkitAudioContext;
+  function ensureAudio() { // call from a user gesture (launch, tab, mic, send)
+    if (!aud) {
+      aud = new Audio(); aud.preload = "auto";
+      aud.addEventListener("playing", function () { if (pl && !pl.started) { pl.started = true; C.lastLatencyMs = Math.round(performance.now() - pl.t0); } });
+      aud.addEventListener("ended", function () { var p = pl; pl = null; if (p) { freeAudio(p); p.done(); } });
+      aud.addEventListener("error", function () { if (pl) pl.bad(); });
+    }
+    if (AC && !actx) { try { actx = new AC(); } catch (e) {} }
+    if (actx && actx.state === "suspended") actx.resume().catch(function () {});
+  }
+  function wireAudio() { // routing the element through a suspended context would mute it, so only wire a running one
+    if (srcNode || !actx || actx.state !== "running") return;
+    try {
+      srcNode = actx.createMediaElementSource(aud); ana = actx.createAnalyser(); ana.fftSize = 512; ana.smoothingTimeConstant = 0.5;
+      srcNode.connect(ana); ana.connect(actx.destination); fbin = new Uint8Array(ana.frequencyBinCount); tbin = new Uint8Array(ana.fftSize);
+    } catch (e) { srcNode = ana = null; }
+  }
+  function freeAudio(p) { if (p.url) { try { URL.revokeObjectURL(p.url); } catch (e) {} p.url = null; } }
+  function haltAudio() {
+    var p = pl; pl = null;
+    if (p) { try { p.ctl.abort(); } catch (e) {} freeAudio(p); }
+    if (aud) { aud.pause(); aud.removeAttribute("src"); try { aud.load(); } catch (e) {} }
+  }
+  function playNat(it, tk, done) {
+    ensureAudio();
+    var mine = pl = { ctl: new AbortController(), started: false, t0: it.t0, url: null, done: done };
+    mine.bad = function () { // failed: before any audio -> browser voice for this message; after -> just end
+      if (pl !== mine) return; haltAudio();
+      if (tk !== gen) return;
+      if (mine.started) return done();
+      queue = sentences(it.t).concat(queue); done();
     };
-    u.onend = done; u.onerror = done;
+    fetch(C.relayUrl + "/tts", { method: "POST", headers: { "Content-Type": "application/json" }, signal: mine.ctl.signal,
+      body: JSON.stringify(auth(it.filler ? { filler: true } : { messageId: it.id })) }).then(function (r) {
+      if (pl !== mine) return;
+      if (!r.ok || !r.body) throw new Error("tts");
+      wireAudio();
+      if (window.MediaSource && MediaSource.isTypeSupported("audio/mpeg")) {
+        var ms = new MediaSource(); aud.src = mine.url = URL.createObjectURL(ms);
+        ms.addEventListener("sourceopen", function () {
+          var sb, rd = r.body.getReader();
+          try { sb = ms.addSourceBuffer("audio/mpeg"); } catch (e) { return mine.bad(); }
+          (function pump() {
+            rd.read().then(function (x) {
+              if (pl !== mine) { rd.cancel().catch(function () {}); return; }
+              if (x.done) { try { if (!sb.updating) ms.endOfStream(); else sb.addEventListener("updateend", function () { try { ms.endOfStream(); } catch (e) {} }, { once: true }); } catch (e) {} return; }
+              sb.addEventListener("updateend", pump, { once: true }); sb.appendBuffer(x.value);
+            }).catch(function () { mine.bad(); });
+          })();
+        }, { once: true });
+        return aud.play();
+      }
+      return r.blob().then(function (b) { if (pl !== mine) return; aud.src = mine.url = URL.createObjectURL(b); return aud.play(); });
+    }).catch(function () { mine.bad(); });
+  }
+  function playBrowser(text, tk, done) {
+    var u = new SpeechSynthesisUtterance(text), v = pickVoice();
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
+    u.onend = u.onerror = function () { if (curUtt === u) { curUtt = null; done(); } };
     u.onstart = function () { if (curUtt === u) vizKick(1); };
     u.onboundary = function () { if (curUtt === u) vizKick(0.6); };
     curUtt = u; // keep a reference: Chrome can garbage-collect a playing utterance
     TTS.speak(u);
   }
+  function next() {
+    if (!voiceOn || speaking) return;
+    if (!queue.length) { status(lab()); return; }
+    clearTimeout(restartT);
+    var it = queue.shift(), tk = ++gen, nat = vmode === "natural" && !!(it.id || it.filler);
+    cur = it.t; speaking = true; thinking = false; real = nat; if (!nat) vizKick(1); status(lab());
+    dropPend();
+    if (recRun) { try { rec.abort(); } catch (e) {} } // half-duplex: stop listening while Wren talks
+    var done = function () {
+      if (tk !== gen) return; speaking = false; real = false; recent = cur; endAt = Date.now(); cur = "";
+      if (queue.length) return next();
+      status(lab());
+      clearTimeout(restartT); restartT = setTimeout(startRec, TAIL + 30);
+    };
+    if (nat) playNat(it, tk, done); else playBrowser(it.t, tk, done);
+  }
   function stopSpeech() {
-    queue = []; curUtt = null; speaking = false; cur = "";
+    gen++; queue = []; curUtt = null; speaking = false; real = false; cur = "";
+    haltAudio();
     if (TTS) TTS.cancel();
     if (voiceOn) status(lab());
   }
@@ -209,7 +291,7 @@
     status(msg || "Voice off");
   }
   function voiceStart() {
-    voiceOn = true; muted = false; el.mic.setAttribute("aria-pressed", "true");
+    ensureAudio(); voiceOn = true; muted = false; el.mic.setAttribute("aria-pressed", "true");
     el.panel.classList.add("sw-voice"); tabsSync(); vizStart(); startRec(); status(lab());
     if (S) { quiet = true; poll(false).then(function () { quiet = false; }); } // what is already there is not spoken
   }
@@ -218,7 +300,7 @@
     var t = (pend + " " + pendItm).trim(); dropPend(); if (!t) return;
     awaiting = true; clearTimeout(fillerT);
     fillerT = setTimeout(function () { // filler once, only if no reply yet (counted from the actual send)
-      if (awaiting && voiceOn && C.voiceFiller) { awaiting = false; speakText(C.voiceFiller); }
+      if (awaiting && voiceOn && C.voiceFiller) { awaiting = false; speakText(C.voiceFiller, null, true); }
     }, 2500);
     send({ text: t });
   }
@@ -254,7 +336,7 @@
     if (awaitEcho) { held.push(m); return; } // before the echo of the latest send: stale if the echo shows up, spoken if the safety timer fires
     var low = (m.text || "").toLowerCase();
     if ((C.voiceSkipPatterns || []).some(function (p) { return p && low.indexOf(String(p).toLowerCase()) >= 0; })) { status(lab()); return; }
-    thinking = false; var t = speechText(m); if (t) speakText(t); else status(lab());
+    thinking = false; var t = speechText(m); if (t) speakText(t, m.id); else status(lab());
   }
 
   function clearEcho(speakHeld) { // one timer; held messages are stale once the echo arrives, newer if the timer fires
@@ -326,8 +408,16 @@
       el.gear.setAttribute("aria-label", "Voice settings"); el.gear.setAttribute("aria-expanded", "false");
       head.appendChild(el.gear);
       el.menu = h("div", "sw-menu"); el.menu.hidden = true;
-      var vl = h("label", "", "Voice"); el.voiceSel = h("select"); vl.appendChild(el.voiceSel);
-      el.menu.appendChild(vl);
+      var ml = h("label", "", "Voice"); el.modeSel = h("select"); ml.appendChild(el.modeSel);
+      [["natural", "Natural (default)"], ["browser", "Browser"]].forEach(function (o) {
+        var op = h("option", "", o[1]); op.value = o[0]; if (o[0] === vmode) op.selected = true; el.modeSel.appendChild(op);
+      });
+      var vl = h("label", "", "Browser voice"); el.voiceSel = h("select"); vl.appendChild(el.voiceSel); vl.hidden = vmode !== "browser";
+      el.menu.appendChild(ml); el.menu.appendChild(vl);
+      el.modeSel.addEventListener("change", function () {
+        vmode = el.modeSel.value === "browser" ? "browser" : "natural"; vl.hidden = vmode !== "browser";
+        try { localStorage.setItem(MKEY, vmode); } catch (e) {}
+      });
       el.voiceSel.addEventListener("change", function () {
         voiceName = el.voiceSel.value;
         try { localStorage.setItem(VKEY, voiceName); } catch (e) {}
@@ -377,7 +467,7 @@
       form.appendChild(el.mic); form.appendChild(el.status);
       initVoice();
       el.mic.addEventListener("click", function () { // mute toggle only: never touches Wren's speech
-        if (!voiceOn) return;
+        ensureAudio(); if (!voiceOn) return;
         muted = !muted; el.mic.setAttribute("aria-pressed", String(!muted));
         if (muted) { dropPend(); if (rec) { try { rec.abort(); } catch (e) {} } } else startRec();
         status(lab());
@@ -498,6 +588,7 @@
 
   function send(p) {
     if (busy) return;
+    if (voiceOn) ensureAudio();
     busy = true; el.send.disabled = true;
     hush = false; awaitEcho = true; held = []; echoFor = (p.label || p.text || "").trim(); clearTimeout(echoT); // replies after this message are spoken; anything polled before its echo is older
     if (voiceOn) { if (speaking || queue.length) stopSpeech(); thinking = true; status(lab()); }
@@ -557,6 +648,7 @@
 
   /* ---- open / close ---- */
   function openPanel() {
+    if (AC) ensureAudio();
     open = true; el.panel.hidden = false; el.launch.hidden = true;
     ensureSession().then(function () { return polled ? null : poll(false); }).then(function () {
       if (!lastId) startFast(); else schedule(); // fresh chat: poll fast so the greeting shows quickly
