@@ -674,6 +674,7 @@
   }
 
   buildUI();
+  C.open = openPanel; // help page button (site.js) opens the panel
   // create the session while the page is idle so the greeting is already waiting when the panel opens
   try { if (!JSON.parse(sessionStorage.getItem(KEY) || "null")) (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(function () { ensureSession().catch(function () {}); }); } catch (e) {}
   if (TTS) { TTS.addEventListener("voiceschanged", loadVoices); loadVoices(); }

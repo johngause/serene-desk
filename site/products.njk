@@ -57,6 +57,7 @@ eleventyComputed:
       {% if p.sizeNote %}<p class="sizenote">{{ p.sizeNote }}</p>{% endif %}
       <button class="btn lamp" type="submit" id="addbtn">Add to cart</button>
       <p class="vh" id="addlive" role="status" aria-live="polite"></p>
+      <a class="textlink" id="viewcart" href="{{ '/cart/' | url }}" hidden>View cart</a>
     </form>
 
     <section class="block" aria-labelledby="desc-h">

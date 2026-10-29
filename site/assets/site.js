@@ -262,7 +262,8 @@
     var cart = readCart() || presetCart(), id = optForm.dataset.id, w = d.querySelector('input[name="width"]:checked');
     var l = cart.filter(function (x) { return x.id === id && x.sku === (sku ? sku.textContent : undefined); })[0];
     if (l) l.qty++; else cart.push({ id: id, qty: 1, sku: sku ? sku.textContent : undefined, price: w ? +w.dataset.price : undefined });
-    saveCart(cart);
+    saveCart(cart); setBadge(cart);
+    e.preventDefault(); // stay on the page; without JS the form still goes to /cart/
   });
   var presetIds = null; // read once, before the first redraw replaces the server-rendered lines
   function presetCart() { // ids come from site.json via the server-rendered HTML (summary.njk li[data-id], or the product form's data-preset)
