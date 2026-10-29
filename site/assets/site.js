@@ -289,7 +289,12 @@
           '<button type="button" class="rm" data-rm="1" aria-label="Remove ' + esc(p.name) + '">Remove</button></div></div>' +
           '<p class="price' + (sale ? ' on' : '') + '">' + money(unit * l.qty) + (was ? '<s><span class="vh">was </span>' + money(p.price * l.qty) + '</s>' : '') + '</p></li>';
       }).join("");
-      if (!cart.length) lines.innerHTML = '<li class="pending">[COPY PENDING: empty cart message]</li>';
+      if (!cart.length) {
+        var li = d.createElement("li"), h = d.createElement("h2"), t = d.createElement("p"), a = d.createElement("a");
+        li.className = "empty"; h.textContent = "Your cart is empty."; t.textContent = "Nothing here yet. Start with a desk, or something small for the one you have.";
+        a.className = "btn lamp"; a.href = siteBase + "desks/"; a.textContent = "Shop desks";
+        li.append(h, t, a); lines.replaceChildren(li);
+      }
       d.querySelectorAll(".totals").forEach(function (e) { e.hidden = !cart.length; });
       setBadge(cart);
       d.querySelectorAll(".subtotal").forEach(function (e) { e.textContent = money(total); });

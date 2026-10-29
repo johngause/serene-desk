@@ -328,4 +328,7 @@ p,li{text-wrap:pretty}
 .prose table{border-collapse:collapse;margin:20px 0;font-size:15px;min-width:min(100%,520px)}
 .prose th,.prose td{text-align:left;padding:10px 24px 10px 0;border-bottom:1px solid var(--line);vertical-align:top}
 .prose thead th{font:500 12px var(--mono);color:var(--fog);text-transform:uppercase}
-.prose td{color:var(--fog)}
+.prose td{color:var(--fog)}.widthhelp{color:var(--fog);margin:-8px 0 22px;font-size:15px}
+.lines .empty{padding:40px 0;list-style:none}
+.lines .empty h2{margin:0 0 8px}
+.lines .empty p{color:var(--fog);margin:0 0 20px}
