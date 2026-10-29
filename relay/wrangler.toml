@@ -1,3 +1,7 @@
 name = "serene-relay"
 main = "worker.js"
 compatibility_date = "2025-01-01"
+
+[vars]
+ELEVENLABS_VOICE_ID = "onwK4e9ZLuTAKqWW03F9" # premade "Daniel"
+ELEVENLABS_MODEL = "eleven_flash_v2_5"
