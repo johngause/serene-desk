@@ -180,3 +180,4 @@ details.variants[open] summary{margin-bottom:10px}
 @keyframes zin{from{opacity:0;transform:scale(.94)}}
 @keyframes zfade{from{opacity:0}}
 @media (prefers-reduced-motion:reduce){.zoom[open],.zoom[open]::backdrop{animation:none}.js .stickybar.hide,.js .stickybar.nearfoot{transition:none}}
+.prod .img:has(use[href="#a-tray"]) svg{width:72%;margin-top:0}
