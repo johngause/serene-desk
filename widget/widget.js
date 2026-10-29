@@ -88,6 +88,7 @@
     }
     vamp += (a - vamp) * (a > vamp ? 0.5 : speaking ? 0.07 : 0.4);
   }
+  var rotA = 0, brP = 0, brV = 1.3, glowK = 0; // accumulated phases + eased values: no jump when the rate/state changes
   function vizDraw(t, dt, still) {
     if (!ctx || !COL) return;
     if (still) { // reduced motion: one static frame per state, opacity changes in CSS
@@ -105,12 +106,15 @@
     var bloom = ctx.createRadialGradient(cx, cy, R0 * 0.4, cx, cy, R0 * (2.6 + vamp));
     bloom.addColorStop(0, rgba(COL.lamp, bA)); bloom.addColorStop(0.5, rgba(COL.oak, bA * 0.4)); bloom.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = bloom; ctx.fillRect(0, 0, vW, vH);
-    var rot = still ? 0 : t * (0.08 + venergy * 0.05), strong = [], br = thinking ? 2.4 : 1.3;
+    var k8 = Math.min(1, dt * 8), tgtGlow = thinking && !speaking ? 1 : 0; // ~350 ms ease
+    brV += ((thinking ? 2.4 : 1.3) - brV) * k8; glowK += (tgtGlow - glowK) * (still ? 1 : k8);
+    if (!still) { rotA += dt * (0.08 + venergy * 0.05); brP += dt * brV; }
+    var rot = still ? 0 : rotA, strong = [];
     ctx.lineCap = "round"; ctx.lineWidth = Math.max(2, (Math.PI * 2 * R0 / BARS) * 0.45);
     for (var b = 0; b < BARS; b++) {
       var frac = b / BARS, ang = frac * Math.PI * 2 + rot - Math.PI / 2;
       var fold = frac < 0.5 ? frac * 2 : (1 - frac) * 2, band = Math.min(VN - 1, Math.floor(fold * VN * 0.85));
-      var breath = still ? 0.5 : 0.5 + 0.5 * Math.sin(t * br - frac * Math.PI * 6);
+      var breath = still ? 0.5 : 0.5 + 0.5 * Math.sin(brP - frac * Math.PI * 6);
       var len = 2 + breath * 4 + spec[band] * R0 * 1.3 * venergy, r1 = R0 + 8, r2 = r1 + len;
       var c = mix(mix(COL.lamp, COL.sage, fold), COL.mist, Math.min(1, spec[band] * 0.3)), cs = Math.cos(ang), sn = Math.sin(ang);
       ctx.strokeStyle = rgba(c, 0.4 + venergy * 0.15 + spec[band] * 0.2);
@@ -133,10 +137,10 @@
     disc.addColorStop(0, rgba(mix(COL.line, COL.lamp, 0.15 + vamp * 0.25), 1)); disc.addColorStop(0.7, rgba(COL.deep, 1)); disc.addColorStop(1, rgba(mix(COL.deep, COL.slate, 0.2), 1));
     ctx.fillStyle = disc; ctx.beginPath(); ctx.arc(cx, cy, R0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = rgba(COL.lamp, 0.15 + vamp * 0.35); ctx.lineWidth = 1.2; ctx.stroke();
-    if (thinking && !speaking) { // calm lamp glow on the orb while a reply is awaited (static when reduced motion)
+    if (glowK > 0.003) { // calm lamp glow on the orb while a reply is awaited (static when reduced motion)
       var gp = still ? 0.7 : 0.5 + 0.5 * Math.sin(t * 1.4), gl = ctx.createRadialGradient(cx, cy, R0 * 0.1, cx, cy, R0 * 1.7);
       ctx.globalCompositeOperation = "lighter";
-      gl.addColorStop(0, rgba(COL.lamp, 0.25 + gp * 0.3)); gl.addColorStop(0.55, rgba(COL.oak, 0.12 + gp * 0.14)); gl.addColorStop(1, "rgba(0,0,0,0)");
+      gl.addColorStop(0, rgba(COL.lamp, (0.25 + gp * 0.3) * glowK)); gl.addColorStop(0.55, rgba(COL.oak, (0.12 + gp * 0.14) * glowK)); gl.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(cx, cy, R0 * 1.7, 0, Math.PI * 2); ctx.fill();
       ctx.globalCompositeOperation = "source-over";
     }
