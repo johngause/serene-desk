@@ -70,7 +70,8 @@
 .sw-viz[data-s="muted"] .sw-vlabel{color:var(--ember)}
 .sw-viz canvas{display:block;width:100%;height:100%}
 .sw-vlabel{position:absolute;left:0;right:0;bottom:8px;text-align:center;font:500 12px var(--mono);color:var(--fog)}
-.sw-viz[data-s="speaking"] .sw-vlabel{color:var(--lamp)}
+.sw-viz[data-s="speaking"] .sw-vlabel,.sw-viz[data-s="thinking"] .sw-vlabel{color:var(--lamp)}
+.sw-viz[data-s="thinking"] .sw-vlabel{font-size:14px;font-weight:600;letter-spacing:.02em}
 .sw-voice .sw-log{height:min(200px,30vh)}
 .sw-voice .sw-typing{display:none}
 @media (prefers-reduced-motion:reduce){.sw-viz canvas{opacity:.55;transition:opacity .6s}.sw-viz[data-s="speaking"] canvas{opacity:1}}
