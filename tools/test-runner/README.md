@@ -11,6 +11,7 @@ python runner.py --csv tests.csv --label baseline --set main --concurrency 2
 Config comes from the repo-root `.env` (`ZD_SUBDOMAIN`, `ZD_APP_ID`, `ZD_KEY_ID`, `ZD_SECRET`, `ZD_AI_AGENT_INTEGRATION_ID`); real environment variables override it.
 
 Flags: `--csv` (default `tests.csv`), `--label`, `--set main|holdout|all`, `--only id1,id2`, `--concurrency` (default 2), `--dry-run` (validate CSV and config, no API calls).
+Also: `--repeat K12:3,K13:3` (those tests run n times as K12#1..), `--followup "text"` (sent after the agent goes quiet; reply saved in `followup_reply`), `--out DIR`. Rows also carry `label`, `test_id`, `conversation_id`, `started_at` (ISO with timezone).
 
 CSV columns: `id, category, turns, expected, source, set`. Separate multiple customer turns with `||`.
 

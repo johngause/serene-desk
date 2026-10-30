@@ -107,12 +107,13 @@ def list_messages(zd, cid):
         after = page[-1]["id"]
 
 
-def run_test(zd, test, responder):
+def run_test(zd, test, responder, followup=None):
     user = zd.call("POST", "/users", {"externalId": "test-" + uuid.uuid4().hex[:10],
                                       "profile": {"givenName": "Test", "surname": "Runner"}})["user"]
     cid = zd.call("POST", "/conversations", {"type": "personal", "participants": [{"userId": user["id"]}],
                                              "activeSwitchboardIntegrationId": responder})["conversation"]["id"]
     t0 = time.time()
+    started_at = datetime.now().astimezone().isoformat(timespec="seconds")
     seen, msgs, handoff = set(), [], False
     # Let the AI agent's greeting land first, like a real visitor, so it isn't timed as a reply.
     while time.time() - t0 < GREETING_WAIT:
@@ -124,7 +125,12 @@ def run_test(zd, test, responder):
                          "text": text_of(m), "id": m["id"], "greeting": True})
         if new:
             break
-    for turn in test["turns"]:
+    turns = [(t, False) for t in test["turns"]]
+    if followup:
+        turns.append((followup, True))  # sent once the agent has gone quiet after the last turn
+    for turn, is_followup in turns:
+        if is_followup and handoff:
+            break
         sent = time.time()
         zd.call("POST", f"/conversations/{cid}/messages",
                 {"author": {"type": "user", "userId": user["id"]}, "content": {"type": "text", "text": turn}})
@@ -136,7 +142,8 @@ def run_test(zd, test, responder):
                     continue
                 seen.add(m["id"])
                 who = m.get("author", {}).get("type")
-                msgs.append({"t": stamp(m, t0), "author": who, "text": text_of(m), "id": m["id"]})
+                msgs.append({"t": stamp(m, t0), "author": who, "text": text_of(m), "id": m["id"],
+                             **({"followup": True} if is_followup else {})})
                 if who == "business":
                     last_agent = time.time()
             if last_agent and time.time() - last_agent >= QUIET:
@@ -146,11 +153,15 @@ def run_test(zd, test, responder):
         handoff = handed_off(zd, cid, responder)
         if handoff:
             break  # a human owns it now; the AI agent won't answer further turns
-    agent = [m for m in msgs if m["author"] == "business" and not m.get("greeting")]
-    users = [m["t"] for m in msgs if m["author"] == "user"]
+    fu = [m for m in msgs if m.get("followup") and m["author"] == "business"]
+    msgs_main = [m for m in msgs if not m.get("followup")]
+    agent = [m for m in msgs_main if m["author"] == "business" and not m.get("greeting")]
+    users = [m["t"] for m in msgs_main if m["author"] == "user"]
     first = [m for m in agent if users and m["t"] >= users[0]]
     last = [m for m in agent if users and m["t"] >= users[-1]]
     return {"id": test["id"], "category": test["category"], "set": test["set"], "conversation_id": cid,
+            "started_at": started_at, "followup": followup or "",
+            "followup_reply": "\n\n".join(m["text"] for m in fu) if followup else "",
             "turns": test["turns"], "messages": msgs, "handoff": handoff,
             # seconds from sending the first turn to its first reply, and from the last turn to the final reply
             "first_reply_s": round(first[0]["t"] - users[0], 2) if first else None,
@@ -165,6 +176,9 @@ def main():
     ap.add_argument("--label", default="run")
     ap.add_argument("--set", dest="which", choices=["main", "holdout", "all"], default="all")
     ap.add_argument("--only", help="comma-separated test ids")
+    ap.add_argument("--repeat", help="id:n,... run those tests n times, ids become id#1..#n")
+    ap.add_argument("--followup", help="text sent as an extra customer turn once the agent has gone quiet")
+    ap.add_argument("--out", default=str(HERE / "runs"), help="output directory")
     ap.add_argument("--concurrency", type=int, default=2)
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
@@ -180,6 +194,11 @@ def main():
     if not tests:
         sys.exit("No tests selected.")
 
+    reps = {k.strip(): int(v) for k, v in (x.split(":") for x in a.repeat.split(","))} if a.repeat else {}
+    if set(reps) - {t["id"] for t in tests}:
+        sys.exit(f"--repeat ids not in selection: {sorted(set(reps) - {t['id'] for t in tests})}")
+    tests = [dict(t, id=f"{t['id']}#{i}", base=t["id"]) if t["id"] in reps else dict(t, base=t["id"])
+             for t in tests for i in range(1, reps.get(t["id"], 1) + 1)]
     print(f"Plan: {len(tests)} test(s) from {a.csv}, set={a.which}, concurrency={a.concurrency}, label={a.label}")
     for t in tests:
         print(f"  {t['id']:<8} [{t['set']}] {t['category']:<10} {len(t['turns'])} turn(s): {t['turns'][0][:60]}")
@@ -194,19 +213,20 @@ def main():
         sys.exit(f"Credential check failed, nothing was run.\n{e}\nCheck ZD_SUBDOMAIN, ZD_APP_ID, ZD_KEY_ID, ZD_SECRET.")
     responder = cfg["ZD_AI_AGENT_INTEGRATION_ID"]
 
-    out = HERE / "runs"
-    out.mkdir(exist_ok=True)
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
     stem = out / f"{a.label}-{datetime.now():%Y%m%d-%H%M%S}"
     lock, results = threading.Lock(), []
 
     def work(t):
         try:
-            r = run_test(zd, t, responder)
+            r = run_test(zd, t, responder, a.followup)
         except Exception as e:  # keep the batch going; record the failure
             r = {"id": t["id"], "category": t["category"], "set": t["set"], "turns": t["turns"], "messages": [],
-                 "handoff": False, "conversation_id": "", "first_reply_s": None, "final_reply_s": None,
+                 "handoff": False, "conversation_id": "", "started_at": "", "followup": a.followup or "", "followup_reply": "", "first_reply_s": None, "final_reply_s": None,
                  "final_answer": "", "error": str(e)}
         with lock:
+            r.update(label=a.label, test_id=t["base"])
             results.append(r)
             with open(f"{stem}.jsonl", "a", encoding="utf-8") as f:
                 f.write(json.dumps(r, ensure_ascii=False) + "\n")
@@ -218,7 +238,7 @@ def main():
     order = {t["id"]: i for i, t in enumerate(tests)}
     results.sort(key=lambda r: order[r["id"]])
 
-    cols = ["id", "category", "set", "final_answer", "first_reply_s", "final_reply_s", "handoff", "conversation_id", "error"]
+    cols = ["label", "id", "test_id", "category", "set", "final_answer", "first_reply_s", "final_reply_s", "handoff", "conversation_id", "started_at", "followup", "followup_reply", "error"]
     with open(f"{stem}.csv", "w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, cols, extrasaction="ignore")
         w.writeheader()
